@@ -1,4 +1,14 @@
 # TxPulse
+![Status](https://img.shields.io/badge/Status-MVP-blueviolet?style=for-the-badge)
+![License](https://img.shields.io/badge/License-Private-red?style=for-the-badge)
+
+![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css)
+
+![Rust](https://img.shields.io/badge/Rust-Backend-orange?style=for-the-badge&logo=rust)
+![Solana](https://img.shields.io/badge/Solana-RPC-14F195?style=for-the-badge&logo=solana&logoColor=black)
+![Vercel](https://img.shields.io/badge/Vercel-Deployment-black?style=for-the-badge&logo=vercel&logoColor=white)
 
 TxPulse is a real-time transaction health monitoring dashboard for Solana developers. It allows users to input a Solana wallet or program address and instantly monitor transaction performance, confirmation times, failure rates, and priority fees via a live feed.
 
