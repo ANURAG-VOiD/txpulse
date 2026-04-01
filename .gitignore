@@ -1,0 +1,16 @@
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Rust
+backend/target/
+**/*.rs.bk
+
+# OS
+.DS_Store
+Thumbs.db
