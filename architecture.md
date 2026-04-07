@@ -4,7 +4,7 @@
 
 For the MVP, TxPulse utilizes a two-tier architecture designed for high-throughput real-time monitoring. It consists of a **Next.js frontend** styled with Aceternity UI, and a **Rust WebSocket middleware** acting as the metrics engine. 
 
-Instead of the browser connecting directly to OrbitFlare, the client opens a single WebSocket connection to the Rust backend. The Rust service manages the Solana RPC subscriptions, fetches transaction payloads, calculates metrics, and streams optimized, sanitized updates back to the UI.
+Instead of the browser connecting directly to Helius Dev, the client opens a single WebSocket connection to the Rust backend. The Rust service manages the Solana RPC subscriptions, fetches transaction payloads, calculates metrics, and streams optimized, sanitized updates back to the UI.
 
 ## 2. Component Breakdown
 
@@ -25,7 +25,7 @@ Instead of the browser connecting directly to OrbitFlare, the client opens a sin
 * **Core Stack:** `axum` (web/WS routing), `tokio` (async runtime), `solana-client` (RPC interaction), `serde_json`.
 * **Responsibilities:**
     1. Accept WS connections from the Next.js client.
-    2. Open a `logsSubscribe` connection to OrbitFlare.
+    2. Open a `logsSubscribe` connection to Helius Dev.
     3. Fire HTTP `getTransaction` requests upon log triggers.
     4. Calculate confirmation latency and extract priority fees.
     5. Push structured `TxEvent` and `MetricsUpdate` JSON payloads to the frontend.
@@ -33,8 +33,8 @@ Instead of the browser connecting directly to OrbitFlare, the client opens a sin
 ## 3. Real-Time Data Flow
 1. User pastes address into the Vanish Input.
 2. Next.js connects to Rust backend: `ws://api.txpulse.xyz/monitor/<ADDRESS>`.
-3. Rust connects to OrbitFlare via WS (`logsSubscribe`).
-4. OrbitFlare pushes log notification to Rust.
+3. Rust connects to Helius Dev via WS (`logsSubscribe`).
+4. Helius Dev pushes log notification to Rust.
 5. Rust fetches full transaction via HTTP, computes metrics.
 6. Rust broadcasts JSON event to Next.js.
 7. Next.js updates state and animates UI.
@@ -98,6 +98,6 @@ You are an expert full-stack developer specializing in high-performance Rust bac
 ### 2. Backend Directives (Rust & Axum)
 * **Error Handling:** Use `anyhow` for application-level errors or define custom error enums using `thiserror`. Propagate errors using the `?` operator. Log errors using the `tracing` crate; do not panic.
 * **Concurrency:** Leverage `tokio` effectively. Manage state across WebSocket connections using `Arc<RwLock<T>>` or `tokio::sync::broadcast` channels. Ensure disconnected clients are cleanly removed from state to prevent memory leaks.
-* **Solana RPC Boundaries:** * Implement a basic retry mechanism with backoff when fetching `getTransaction` via HTTP to handle OrbitFlare rate limits or timeouts.
+* **Solana RPC Boundaries:** * Implement a basic retry mechanism with backoff when fetching `getTransaction` via HTTP to handle Helius Dev rate limits or timeouts.
     * Use `Option<T>` for fields in the transaction payload that might be missing (e.g., older transactions lacking priority fee data).
 * **Graceful Shutdown:** Implement signal handlers to cleanly close RPC subscriptions and WebSocket connections when the server process is terminated.
