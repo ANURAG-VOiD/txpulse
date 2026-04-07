@@ -4,23 +4,33 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-# Async Runtime & Web Framework
-tokio = { version = "1.36", features = ["full"] }
-axum = { version = "0.7", features = ["ws", "macros"] }
+# Web framework
+axum = { version = "0.8", features = ["ws"] }
+tower-http = { version = "0.6", features = ["trace"] }
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Solana RPC and subscriptions (non-blocking APIs are used from these crates)
+solana-client = "3"
+solana-pubsub-client = "3"
+solana-sdk = "3"
+solana-transaction-status = "3"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-# Solana Interaction
-solana-client = "1.18"
-solana-sdk = "1.18"
-
-# Error Handling & Logging
-anyhow = "1.0"
-thiserror = "1.0"
+# Logging & Tracing
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
-# Streams / Futures
-futures = "0.3"
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# Env vars
+dotenvy = "0.15"
+
+# Utils
+futures-util = { version = "0.3", features = ["sink"] }
