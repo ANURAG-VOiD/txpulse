@@ -14,3 +14,7 @@ backend/target/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local planning/agent notes
+agent.md
+day-wise-completion.md
