@@ -1,64 +1,72 @@
-import Image from "next/image";
+"use client";
+
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { AddressInput } from "@/components/dashboard/AddressInput";
+import { FloatingNav } from "@/components/dashboard/FloatingNav";
+import { LatencyChart } from "@/components/dashboard/LatencyChart";
+import { MetricsGrid } from "@/components/dashboard/MetricsGrid";
+import { TransactionFeed } from "@/components/dashboard/TransactionFeed";
+import type { MetricsUpdate, TxEvent } from "@/lib/types";
+
+const mockMetrics: MetricsUpdate = {
+  successRatePct: 98.7,
+  avgConfirmationMs: 912,
+  currentSlotLag: 2,
+  txPerMinute: 241,
+};
+
+const mockEvents: TxEvent[] = [
+  { signature: "4mQh...b9F1", status: "success", timestamp: "11:42:01", computeUnitsConsumed: 14120, priorityFeeMicrolamports: 5000, confirmationLatencyMs: 822, slot: 281001221 },
+  { signature: "3xLt...fR9P", status: "failed", timestamp: "11:42:03", computeUnitsConsumed: 10014, priorityFeeMicrolamports: 2500, confirmationLatencyMs: 1320, slot: 281001224 },
+  { signature: "8pvA...cD12", status: "success", timestamp: "11:42:04", computeUnitsConsumed: 16270, priorityFeeMicrolamports: 6000, confirmationLatencyMs: 751, slot: 281001226 },
+  { signature: "7kPJ...oo91", status: "pending", timestamp: "11:42:07", computeUnitsConsumed: 12090, priorityFeeMicrolamports: 3000, confirmationLatencyMs: 0, slot: 281001232 },
+  { signature: "2vbC...a77Q", status: "dropped", timestamp: "11:42:10", computeUnitsConsumed: 0, priorityFeeMicrolamports: 2000, confirmationLatencyMs: 2120, slot: 281001241 },
+];
 
 export default function Home() {
+  const [address, setAddress] = useState("");
+
+  // Derived trend data is memoized for stable chart rendering.
+  const latencySamples = useMemo(
+    () => [920, 870, 1040, 790, 740, 800, 980, 910, 890, 760, 740, 810],
+    [],
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.2),transparent_45%),radial-gradient(circle_at_80%_0%,rgba(139,92,246,0.22),transparent_45%)]" />
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+        <FloatingNav />
+
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-[0_0_50px_rgba(56,189,248,0.14)] sm:p-8"
+        >
+          <p className="text-xs uppercase tracking-[0.26em] text-cyan-200/80">Real-time Solana telemetry</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-100 sm:text-5xl">
+            Monitor transaction health with live signal clarity.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-3 max-w-3xl text-sm text-slate-300 sm:text-base">
+            TxPulse streams status, confirmation latency, slot lag, and priority fee behavior per address in a single operational view.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <div className="mt-6">
+            <AddressInput value={address} onChange={setAddress} />
+          </div>
+        </motion.section>
+
+        <MetricsGrid metrics={mockMetrics} />
+
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <LatencyChart samples={latencySamples} />
+          <TransactionFeed events={mockEvents} />
+        </section>
+
+        <footer id="docs" className="pb-8 text-center text-xs text-slate-400">
+          Built for teams shipping on Solana. Planned next: resilient WebSocket reconnect with exponential backoff.
+        </footer>
       </main>
     </div>
   );
