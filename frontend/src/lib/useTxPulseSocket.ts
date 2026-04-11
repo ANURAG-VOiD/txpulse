@@ -200,10 +200,15 @@ export function useTxPulseSocket(address: string) {
     };
   }, [baseWsUrl, clearReconnectTimer, queueEvent]);
 
-  const startMonitoring = useCallback(() => {
+  const startMonitoring = useCallback((nextAddress?: string) => {
+    const selectedAddress = (nextAddress ?? address).trim();
+    if (!selectedAddress) {
+      return;
+    }
+
     setEvents([]);
     setMetrics(initialMetrics());
-    connect(address);
+    connect(selectedAddress);
   }, [address, connect]);
 
   useEffect(() => {
