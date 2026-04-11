@@ -56,3 +56,47 @@ button,
 input {
   font: inherit;
 }
+
+@keyframes pulseFloat {
+  0% {
+    transform: translateY(0px);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-18px);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(0px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pulse-orb {
+  animation: pulseFloat 9s ease-in-out infinite;
+}
+
+.reveal-up {
+  opacity: 0;
+  animation: revealUp 720ms cubic-bezier(0.2, 0.9, 0.25, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-orb,
+  .reveal-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

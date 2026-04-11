@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 
 // Lightweight nav keeps branding and key entry points accessible.
 export function FloatingNav() {
@@ -21,7 +22,7 @@ export function FloatingNav() {
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.18),rgba(255,255,255,0.03)_35%,transparent_70%)]" />
           <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
 
-          <div className="relative flex items-center gap-2.5">
+          <Link href="/" className="relative flex items-center gap-2.5 rounded-full border border-transparent px-1 py-0.5 transition hover:border-white/20">
             <span className="overflow-hidden rounded-full border border-white/20 bg-white/5">
               <Image
                 src="/txpulse.png"
@@ -33,7 +34,7 @@ export function FloatingNav() {
               />
             </span>
             <p className="text-[11px] font-semibold tracking-[0.24em] text-white uppercase">TxPulse</p>
-          </div>
+          </Link>
 
           <div className="relative hidden items-center gap-5 sm:flex">
             <a className="text-[12px] text-white/72 transition-colors hover:text-white" href="#overview">
@@ -45,9 +46,9 @@ export function FloatingNav() {
             <a className="text-[12px] text-white/72 transition-colors hover:text-white" href="#feed">
               Live Feed
             </a>
-            <a className="text-[12px] text-white/72 transition-colors hover:text-white" href="#docs">
+            <Link className="text-[12px] text-white/72 transition-colors hover:text-white" href="/docs">
               Docs
-            </a>
+            </Link>
           </div>
 
         </motion.div>

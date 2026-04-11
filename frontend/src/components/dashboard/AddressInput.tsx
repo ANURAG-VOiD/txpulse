@@ -7,8 +7,10 @@ interface AddressInputProps {
   value: string;
   onChange: (value: string) => void;
   onMonitor: () => void;
+  onStop?: () => void;
   statusText: string;
   disabled?: boolean;
+  stopDisabled?: boolean;
 }
 
 // Controlled input to plug in future WS subscription logic.
@@ -16,8 +18,10 @@ function AddressInputBase({
   value,
   onChange,
   onMonitor,
+  onStop,
   statusText,
   disabled = false,
+  stopDisabled = false,
 }: AddressInputProps) {
   return (
     <section className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-4 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-5">
@@ -42,9 +46,17 @@ function AddressInputBase({
           type="button"
           onClick={onMonitor}
           disabled={disabled || value.trim().length === 0}
-          className="rounded-2xl border border-white bg-white px-5 py-3 text-sm font-semibold text-black transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:border-white/15 disabled:bg-white/10 disabled:text-white/30"
+          className="rounded-2xl border border-white bg-white px-5 py-3 text-sm font-semibold !text-black transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:border-white/15 disabled:bg-white/10 disabled:text-white/30"
         >
           Monitor
+        </button>
+        <button
+          type="button"
+          onClick={onStop}
+          disabled={disabled || stopDisabled || !onStop}
+          className="rounded-2xl border border-white/20 bg-black/70 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/35 hover:bg-white/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-black/40 disabled:text-white/35"
+        >
+          Stop
         </button>
       </div>
       <p className="mt-3 text-xs text-white/55">{statusText}</p>
