@@ -73,6 +73,18 @@ check: backend-check frontend-lint frontend-typecheck
 # Build both backend and frontend.
 build: backend-build frontend-build
 
+# Build and run containers for full local stack.
+docker-up:
+    docker compose up --build -d
+
+# Stop local container stack.
+docker-down:
+    docker compose down
+
+# Stream logs from local container stack.
+docker-logs:
+    docker compose logs -f
+
 # Clean build artifacts.
 clean:
     cd {{backend_dir}} && cargo clean
