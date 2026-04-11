@@ -156,6 +156,52 @@ txpulse/
 └── README.md
 ```
 
+## Deployment
+
+TxPulse deploys as two services.
+
+1. Backend Rust websocket API as a Docker container on a platform like Railway, Render, or Fly.io.
+2. Frontend Next.js app on Vercel.
+
+### Backend Deployment
+
+1. Use `backend/Dockerfile` as the service image.
+2. Set runtime env vars:
+	- `HELIUS_HTTP_URL`
+	- `HELIUS_WS_URL`
+	- `SERVER_HOST=0.0.0.0`
+	- `SERVER_PORT=3000`
+	- `RUST_LOG=info,tower_http=info`
+3. Expose port `3000`.
+4. Verify with `GET /health` after deploy.
+
+### Frontend Deployment (Vercel)
+
+1. Import this repository in Vercel.
+2. Set root directory to `frontend`.
+3. Add env var:
+	- `NEXT_PUBLIC_WS_URL=wss://<your-backend-domain>/monitor`
+4. Deploy and verify `/app`, `/admin`, and `/docs` routes.
+
+### Local Container Deployment
+
+Use Docker Compose to run full stack locally:
+
+```bash
+docker compose up --build -d
+```
+
+Then open:
+
+1. `http://localhost:3001` for frontend.
+2. `http://localhost:3000/health` for backend health.
+
+Stop stack:
+
+```bash
+docker compose down
+```
+
 
 ## Contributing
 
