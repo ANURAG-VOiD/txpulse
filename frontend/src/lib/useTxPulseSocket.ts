@@ -19,6 +19,7 @@ type ServerEnvelope = NewTransactionEnvelope | MetricsEnvelope;
 
 const MAX_EVENTS = 30;
 const MAX_LATENCY_SAMPLES = 12;
+const MAX_DEDUP_KEYS = 512;
 
 function initialMetrics(): MetricsUpdate {
   return {
@@ -46,6 +47,10 @@ function parsePayload(raw: string): ServerEnvelope | null {
   }
 }
 
+function eventKey(event: TxEvent): string {
+  return `${event.signature}:${event.slot}:${event.timestamp}`;
+}
+
 export function useTxPulseSocket(address: string) {
   const [events, setEvents] = useState<TxEvent[]>([]);
   const [metrics, setMetrics] = useState<MetricsUpdate>(initialMetrics);
@@ -60,6 +65,8 @@ export function useTxPulseSocket(address: string) {
   const connectRef = useRef<(nextAddress: string) => void>(() => {});
   const pendingEventsRef = useRef<TxEvent[]>([]);
   const animationFrameRef = useRef<number | null>(null);
+  const seenEventKeysRef = useRef<Set<string>>(new Set());
+  const seenEventOrderRef = useRef<string[]>([]);
 
   const baseWsUrl = useMemo(() => {
     const fromEnv = process.env.NEXT_PUBLIC_WS_URL;
@@ -90,6 +97,21 @@ export function useTxPulseSocket(address: string) {
   }, []);
 
   const queueEvent = useCallback((event: TxEvent) => {
+    const key = eventKey(event);
+    if (seenEventKeysRef.current.has(key)) {
+      return;
+    }
+
+    seenEventKeysRef.current.add(key);
+    seenEventOrderRef.current.push(key);
+
+    if (seenEventOrderRef.current.length > MAX_DEDUP_KEYS) {
+      const oldestKey = seenEventOrderRef.current.shift();
+      if (oldestKey) {
+        seenEventKeysRef.current.delete(oldestKey);
+      }
+    }
+
     pendingEventsRef.current.push(event);
 
     if (animationFrameRef.current !== null) {
@@ -110,6 +132,9 @@ export function useTxPulseSocket(address: string) {
 
     setStatus("idle");
     setActiveAddress(null);
+    pendingEventsRef.current = [];
+    seenEventKeysRef.current.clear();
+    seenEventOrderRef.current = [];
   }, [clearReconnectTimer]);
 
   const connect = useCallback((nextAddress: string) => {
@@ -130,6 +155,8 @@ export function useTxPulseSocket(address: string) {
     setStatus("connecting");
     setActiveAddress(sanitizedAddress);
     pendingEventsRef.current = [];
+    seenEventKeysRef.current.clear();
+    seenEventOrderRef.current = [];
 
     const reconnectWithBackoff = () => {
       reconnectAttemptRef.current += 1;
@@ -208,6 +235,8 @@ export function useTxPulseSocket(address: string) {
 
     setEvents([]);
     setMetrics(initialMetrics());
+    seenEventKeysRef.current.clear();
+    seenEventOrderRef.current = [];
     connect(selectedAddress);
   }, [address, connect]);
 
@@ -230,6 +259,8 @@ export function useTxPulseSocket(address: string) {
       manualCloseRef.current = true;
       clearReconnectTimer();
       pendingEventsRef.current = [];
+      seenEventKeysRef.current.clear();
+      seenEventOrderRef.current = [];
 
       if (animationFrameRef.current !== null) {
         window.cancelAnimationFrame(animationFrameRef.current);

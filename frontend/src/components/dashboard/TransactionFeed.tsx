@@ -24,9 +24,9 @@ function TransactionFeedBase({ events }: TransactionFeedProps) {
         <span className="text-xs text-white/45">{events.length} events cached</span>
       </div>
       <div className="space-y-3">
-        {events.map((event) => (
+        {events.map((event, index) => (
           <article
-            key={event.signature}
+            key={`${event.signature}-${event.slot}-${event.timestamp}-${index}`}
             className={cn(
               "grid grid-cols-1 gap-3 rounded-[1.3rem] border border-white/10 bg-black/75 p-4 md:grid-cols-[1.4fr_0.5fr_0.4fr_0.6fr] md:items-center",
             )}

@@ -41,6 +41,24 @@ const steps = [
   },
 ];
 
+const personas = [
+  {
+    role: "DeFi Protocol Engineer",
+    painPoint: "Transactions look successful in local tests, then fail or stall under real network congestion and fee spikes.",
+    solvedBy: "TxPulse exposes confirmation latency and failure-rate drift in real time so engineers can tune priority fees before users churn.",
+  },
+  {
+    role: "NFT Mint Operator",
+    painPoint: "Mint windows move fast and teams cannot quickly tell whether drops are caused by wallet spam, slot lag, or unstable routing.",
+    solvedBy: "TxPulse surfaces slot lag, throughput, and feed-level status changes on one screen so operators can react during live mint traffic.",
+  },
+  {
+    role: "DAO Infrastructure Lead",
+    painPoint: "There is no lightweight way to monitor treasury and ops wallet execution health without exposing private dashboards broadly.",
+    solvedBy: "TxPulse pairs wallet-aware monitoring with allowlisted admin access so only approved Phantom accounts can open restricted views.",
+  },
+];
+
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-black text-white">
@@ -149,6 +167,35 @@ export default function Home() {
                 <p className="mt-3 text-sm leading-7 text-white/66">{pillar.text}</p>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="mt-20 reveal-up [animation-delay:320ms]">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.02] p-6 sm:p-8">
+            <div className="max-w-3xl">
+              <p className="text-xs uppercase tracking-[0.33em] text-white/45">Who this is for</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
+                3 builder types, 3 headaches, 0 drama
+              </h2>
+            </div>
+
+            <div className="mt-8 grid gap-4 lg:grid-cols-3">
+              {personas.map((persona, index) => (
+                <article
+                  key={persona.role}
+                  className="reveal-up rounded-2xl border border-white/10 bg-black/35 p-5"
+                  style={{ animationDelay: `${360 + index * 120}ms` }}
+                >
+                  <p className="text-[11px] uppercase tracking-[0.27em] text-white/45">{persona.role}</p>
+                  <p className="mt-4 text-sm leading-7 text-white/72">
+                    <span className="font-medium text-white">Pain point:</span> {persona.painPoint}
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-white/62">
+                    <span className="font-medium text-white">Solved by TxPulse:</span> {persona.solvedBy}
+                  </p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 

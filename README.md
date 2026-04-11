@@ -98,10 +98,11 @@ Create a `.env` file in the `backend/` directory and a `.env.local` file in the 
 
 | Variable | Description |
 |---|---|
-| `Helius_WS_URL` | Your Helius WebSocket endpoint |
-| `Helius_HTTP_URL` | Your Helius HTTP RPC endpoint |
+| `HELIUS_HTTP_URL` | Your Helius HTTP RPC endpoint (required) |
+| `HELIUS_WS_URL` | Your Helius WebSocket endpoint (reserved for WS subscription mode) |
 | `SERVER_HOST` | Bind host for Axum server (default: 0.0.0.0) |
 | `SERVER_PORT` | Port for the Axum server (default: 3000) |
+| `RUST_LOG` | Logging filter, e.g. `info,tower_http=info` |
 
 ### frontend/.env.local
 
@@ -109,21 +110,31 @@ Create a `.env` file in the `backend/` directory and a `.env.local` file in the 
 |---|---|
 | `NEXT_PUBLIC_WS_URL` | WebSocket URL for the local Rust server, e.g. `ws://127.0.0.1:3000/monitor` |
 
-Example files are provided as `.env.example` and `.env.local.example` in each directory.
+Example files are provided as `backend/.env.example` and `frontend/.env.local.example`.
 
 ## Current POC Scope
 
 - Backend includes `GET /health` and `GET /monitor/:address` WebSocket endpoint.
 - `/monitor/:address` validates Solana pubkey and streams `NEW_TRANSACTION` plus `METRICS_UPDATE` payloads.
+- Backend opens `logsSubscribe` to Helius (`HELIUS_WS_URL`) and enriches each log-triggered signature via `getTransaction` over HTTP (`HELIUS_HTTP_URL`).
 - Frontend monitor input opens live websocket connection to the backend and auto-reconnects with exponential backoff.
-- This base POC currently emits deterministic simulated events on the backend for demo reliability.
+- POC emits live address activity (deduped) with rolling metrics.
 
 Quick local POC test:
 
-1. Start backend: `cd backend && cargo run`
-2. Start frontend: `cd frontend && yarn dev`
-3. Open the app and paste a valid Solana address.
-4. Click Monitor and observe live metrics/feed updates.
+1. Create backend env:
+	- `cp backend/.env.example backend/.env`
+	- Replace `YOUR_API_KEY` in `HELIUS_HTTP_URL` (and optionally `HELIUS_WS_URL`).
+2. Create frontend env:
+	- `cp frontend/.env.local.example frontend/.env.local`
+	- Set `NEXT_PUBLIC_WS_URL=ws://127.0.0.1:3000/monitor`
+3. Start backend:
+	- `cd backend && cargo run`
+4. In another terminal, start frontend:
+	- `cd frontend && yarn dev`
+5. Validate backend health:
+	- `curl http://127.0.0.1:3000/health`
+6. Open frontend app, connect wallet, then monitor a valid Solana address.
 
 
 ## Project Structure
@@ -138,9 +149,7 @@ txpulse/
 │
 ├── backend/
 │   ├── src/
-│   │   ├── main.rs        # Axum entry point and WebSocket handler
-│   │   ├── rpc.rs         # RPC subscription and HTTP fetch logic
-│   │   └── metrics.rs     # Confirmation latency and fee computation
+│   │   └── main.rs        # Axum entry point, logsSubscribe pipeline, and metric computation
 │   └── Cargo.toml
 │
 ├── LICENSE
