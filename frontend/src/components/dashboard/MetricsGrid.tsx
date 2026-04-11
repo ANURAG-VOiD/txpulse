@@ -2,6 +2,7 @@
 
 import { memo, useMemo } from "react";
 import type { MetricsUpdate } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface MetricsGridProps {
   metrics: MetricsUpdate;
@@ -11,10 +12,10 @@ interface MetricsGridProps {
 function MetricsGridBase({ metrics }: MetricsGridProps) {
   const cards = useMemo(
     () => [
-      { label: "Success Rate", value: `${metrics.successRatePct.toFixed(1)}%`, glow: "from-emerald-300/40 to-emerald-500/10" },
-      { label: "Avg Confirmation", value: `${Math.round(metrics.avgConfirmationMs)} ms`, glow: "from-cyan-300/40 to-cyan-500/10" },
-      { label: "Slot Lag", value: `${metrics.currentSlotLag}`, glow: "from-violet-300/40 to-violet-500/10" },
-      { label: "Throughput", value: `${metrics.txPerMinute} tx/min`, glow: "from-fuchsia-300/40 to-fuchsia-500/10" },
+      { label: "Success Rate", value: `${metrics.successRatePct.toFixed(1)}%`, detail: "Healthy confirmations" },
+      { label: "Avg Confirmation", value: `${Math.round(metrics.avgConfirmationMs)} ms`, detail: "Observed latency" },
+      { label: "Slot Lag", value: `${metrics.currentSlotLag}`, detail: "Current drift" },
+      { label: "Throughput", value: `${metrics.txPerMinute} tx/min`, detail: "Live feed pace" },
     ],
     [metrics],
   );
@@ -28,11 +29,15 @@ function MetricsGridBase({ metrics }: MetricsGridProps) {
       {cards.map((card) => (
         <article
           key={card.label}
-          className={`rounded-2xl border border-white/10 bg-gradient-to-br ${card.glow} p-[1px]`}
+          className={cn(
+            "group relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-[1px] shadow-[0_20px_60px_rgba(0,0,0,0.28)] transition-transform duration-300 hover:-translate-y-1",
+          )}
         >
-          <div className="rounded-2xl bg-slate-950/85 p-4">
-            <p className="text-xs uppercase tracking-wider text-slate-400">{card.label}</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-100">{card.value}</p>
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-60" />
+          <div className="rounded-[1.7rem] bg-black/80 p-4 sm:p-5">
+            <p className="text-[11px] uppercase tracking-[0.3em] text-white/45">{card.label}</p>
+            <p className="mt-3 text-3xl font-semibold tracking-tight text-white">{card.value}</p>
+            <p className="mt-4 text-sm text-white/55">{card.detail}</p>
           </div>
         </article>
       ))}

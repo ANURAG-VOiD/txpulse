@@ -2,14 +2,25 @@
 frontend/node_modules/
 frontend/.next/
 frontend/out/
+frontend/build/
 frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
+frontend/.pnpm-debug.log*
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.vercel/
+frontend/*.tsbuildinfo
 
 # Rust
 backend/target/
 **/*.rs.bk
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/*.log
 
 # OS
 .DS_Store
@@ -18,3 +29,24 @@ Thumbs.db
 # Local planning/agent notes
 agent.md
 day-wise-completion.md
+
+# Root env files
+.env
+.env.*
+!.env.example
+
+# Logs and runtime artifacts
+*.log
+*.pid
+*.pid.lock
+
+# Caches and temporary files
+.cache/
+tmp/
+temp/
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo

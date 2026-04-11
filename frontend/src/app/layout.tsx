@@ -1,21 +1,40 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "TxPulse | Solana Transaction Health Monitor",
+  title: "TxPulse | Solana Transaction Monitor",
   description:
-    "Real-time Solana transaction health dashboard for confirmation latency, success rate, slot lag, and priority fee monitoring.",
+    "Monochrome Solana transaction health dashboard for confirmation latency, success rate, slot lag, and priority fee monitoring.",
+  icons: {
+    icon: "/txpulse.png",
+    shortcut: "/txpulse.png",
+    apple: "/txpulse.png",
+  },
+  openGraph: {
+    title: "TxPulse | Solana Transaction Monitor",
+    description:
+      "Monochrome Solana transaction health dashboard for confirmation latency, success rate, slot lag, and priority fee monitoring.",
+    images: ["/txpulse.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TxPulse | Solana Transaction Monitor",
+    description:
+      "Monochrome Solana transaction health dashboard for confirmation latency, success rate, slot lag, and priority fee monitoring.",
+    images: ["/txpulse.png"],
+  },
 };
 
 export default function RootLayout({
@@ -26,9 +45,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${ibmPlexMono.variable} h-full bg-black antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-black text-white">{children}</body>
     </html>
   );
 }

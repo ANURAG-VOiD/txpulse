@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 interface LatencyChartProps {
   samples: number[];
@@ -26,21 +27,21 @@ function LatencyChartBase({ samples }: LatencyChartProps) {
   }, [samples]);
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-      <p className="text-sm font-medium text-slate-200">Confirmation Latency Trend</p>
-      <p className="mt-1 text-xs text-slate-400">Last 12 tx snapshots</p>
-      <div className="mt-4 h-40 rounded-xl border border-cyan-300/20 bg-slate-950/80 p-3">
+    <section className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.28)] sm:p-5">
+      <p className="text-[11px] uppercase tracking-[0.3em] text-white/45">Confirmation Latency Trend</p>
+      <p className="mt-3 max-w-sm text-sm text-white/60">Rolling confirmation timing from the latest websocket events.</p>
+      <div className={cn("mt-5 h-44 rounded-[1.4rem] border border-white/10 bg-black/80 p-4")}>
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full">
           <defs>
             <linearGradient id="latencyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#22d3ee" />
-              <stop offset="100%" stopColor="#a78bfa" />
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="100%" stopColor="#b8b8b8" />
             </linearGradient>
           </defs>
           <polyline
             fill="none"
             stroke="url(#latencyGradient)"
-            strokeWidth="2.6"
+            strokeWidth="2.4"
             strokeLinejoin="round"
             strokeLinecap="round"
             points={points}

@@ -17,7 +17,7 @@ backend-install:
 
 # Frontend dependencies.
 frontend-install:
-    cd {{frontend_dir}} && npm install
+    cd {{frontend_dir}} && yarn install
 
 # Run backend server.
 backend-run:
@@ -49,23 +49,23 @@ backend-health:
 
 # Run frontend dev server.
 frontend-dev:
-    cd {{frontend_dir}} && npm run dev
+    cd {{frontend_dir}} && yarn dev
 
 # Build frontend.
 frontend-build:
-    cd {{frontend_dir}} && npm run build
+    cd {{frontend_dir}} && yarn build
 
 # Start frontend production server.
 frontend-start:
-    cd {{frontend_dir}} && npm run start
+    cd {{frontend_dir}} && yarn start
 
 # Lint frontend.
 frontend-lint:
-    cd {{frontend_dir}} && npm run lint
+    cd {{frontend_dir}} && yarn lint
 
 # Type-check frontend.
 frontend-typecheck:
-    cd {{frontend_dir}} && npx tsc --noEmit
+    cd {{frontend_dir}} && yarn tsc --noEmit
 
 # Run all common quality checks.
 check: backend-check frontend-lint frontend-typecheck
