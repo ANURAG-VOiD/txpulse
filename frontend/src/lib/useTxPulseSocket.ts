@@ -17,7 +17,7 @@ type MetricsEnvelope = {
 
 type ServerEnvelope = NewTransactionEnvelope | MetricsEnvelope;
 
-const MAX_EVENTS = 50;
+const MAX_EVENTS = 30;
 const MAX_LATENCY_SAMPLES = 12;
 
 function initialMetrics(): MetricsUpdate {
@@ -58,6 +58,8 @@ export function useTxPulseSocket(address: string) {
   const reconnectAttemptRef = useRef(0);
   const manualCloseRef = useRef(false);
   const connectRef = useRef<(nextAddress: string) => void>(() => {});
+  const pendingEventsRef = useRef<TxEvent[]>([]);
+  const animationFrameRef = useRef<number | null>(null);
 
   const baseWsUrl = useMemo(() => {
     const fromEnv = process.env.NEXT_PUBLIC_WS_URL;
@@ -73,6 +75,29 @@ export function useTxPulseSocket(address: string) {
       reconnectTimerRef.current = null;
     }
   }, []);
+
+  const flushPendingEvents = useCallback(() => {
+    animationFrameRef.current = null;
+
+    if (pendingEventsRef.current.length === 0) {
+      return;
+    }
+
+    const batch = [...pendingEventsRef.current].reverse();
+    pendingEventsRef.current = [];
+
+    setEvents((current) => [...batch, ...current].slice(0, MAX_EVENTS));
+  }, []);
+
+  const queueEvent = useCallback((event: TxEvent) => {
+    pendingEventsRef.current.push(event);
+
+    if (animationFrameRef.current !== null) {
+      return;
+    }
+
+    animationFrameRef.current = window.requestAnimationFrame(flushPendingEvents);
+  }, [flushPendingEvents]);
 
   const disconnect = useCallback(() => {
     manualCloseRef.current = true;
@@ -104,6 +129,7 @@ export function useTxPulseSocket(address: string) {
     setLastError(null);
     setStatus("connecting");
     setActiveAddress(sanitizedAddress);
+    pendingEventsRef.current = [];
 
     const reconnectWithBackoff = () => {
       reconnectAttemptRef.current += 1;
@@ -133,11 +159,22 @@ export function useTxPulseSocket(address: string) {
       }
 
       if (payload.type === "NEW_TRANSACTION") {
-        setEvents((current) => [payload.data, ...current].slice(0, MAX_EVENTS));
+        queueEvent(payload.data);
       }
 
       if (payload.type === "METRICS_UPDATE") {
-        setMetrics(payload.data);
+        setMetrics((current) => {
+          if (
+            current.successRatePct === payload.data.successRatePct
+            && current.avgConfirmationMs === payload.data.avgConfirmationMs
+            && current.currentSlotLag === payload.data.currentSlotLag
+            && current.txPerMinute === payload.data.txPerMinute
+          ) {
+            return current;
+          }
+
+          return payload.data;
+        });
       }
     };
 
@@ -161,7 +198,7 @@ export function useTxPulseSocket(address: string) {
 
       reconnectWithBackoff();
     };
-  }, [baseWsUrl, clearReconnectTimer]);
+  }, [baseWsUrl, clearReconnectTimer, queueEvent]);
 
   const startMonitoring = useCallback(() => {
     setEvents([]);
@@ -187,6 +224,12 @@ export function useTxPulseSocket(address: string) {
     return () => {
       manualCloseRef.current = true;
       clearReconnectTimer();
+      pendingEventsRef.current = [];
+
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+      }
+
       if (socketRef.current) {
         socketRef.current.close();
       }
