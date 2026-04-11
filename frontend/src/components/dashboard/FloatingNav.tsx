@@ -46,9 +46,9 @@ export function FloatingNav() {
             <a className="text-[12px] text-white/72 transition-colors hover:text-white" href="#feed">
               Live Feed
             </a>
-            <a className="text-[12px] text-white/72 transition-colors hover:text-white" href="#docs">
+            <Link className="text-[12px] text-white/72 transition-colors hover:text-white" href="/docs">
               Docs
-            </a>
+            </Link>
           </div>
 
         </motion.div>
