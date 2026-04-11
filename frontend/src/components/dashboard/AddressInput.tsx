@@ -5,10 +5,19 @@ import { memo } from "react";
 interface AddressInputProps {
   value: string;
   onChange: (value: string) => void;
+  onMonitor: () => void;
+  statusText: string;
+  disabled?: boolean;
 }
 
 // Controlled input to plug in future WS subscription logic.
-function AddressInputBase({ value, onChange }: AddressInputProps) {
+function AddressInputBase({
+  value,
+  onChange,
+  onMonitor,
+  statusText,
+  disabled = false,
+}: AddressInputProps) {
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 shadow-[0_0_35px_rgba(14,165,233,0.12)]">
       <label htmlFor="address" className="mb-2 block text-xs text-slate-300">
@@ -23,14 +32,18 @@ function AddressInputBase({ value, onChange }: AddressInputProps) {
           className="w-full rounded-xl border border-cyan-300/30 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none ring-cyan-200/40 transition placeholder:text-slate-400 focus:ring-2"
           autoComplete="off"
           spellCheck={false}
+          disabled={disabled}
         />
         <button
           type="button"
+          onClick={onMonitor}
+          disabled={disabled || value.trim().length === 0}
           className="rounded-xl bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-3 text-sm font-semibold text-slate-950 transition-transform hover:scale-[1.02]"
         >
           Monitor
         </button>
       </div>
+      <p className="mt-2 text-xs text-slate-400">{statusText}</p>
     </section>
   );
 }

@@ -7,31 +7,39 @@ import { FloatingNav } from "@/components/dashboard/FloatingNav";
 import { LatencyChart } from "@/components/dashboard/LatencyChart";
 import { MetricsGrid } from "@/components/dashboard/MetricsGrid";
 import { TransactionFeed } from "@/components/dashboard/TransactionFeed";
-import type { MetricsUpdate, TxEvent } from "@/lib/types";
-
-const mockMetrics: MetricsUpdate = {
-  successRatePct: 98.7,
-  avgConfirmationMs: 912,
-  currentSlotLag: 2,
-  txPerMinute: 241,
-};
-
-const mockEvents: TxEvent[] = [
-  { signature: "4mQh...b9F1", status: "success", timestamp: "11:42:01", computeUnitsConsumed: 14120, priorityFeeMicrolamports: 5000, confirmationLatencyMs: 822, slot: 281001221 },
-  { signature: "3xLt...fR9P", status: "failed", timestamp: "11:42:03", computeUnitsConsumed: 10014, priorityFeeMicrolamports: 2500, confirmationLatencyMs: 1320, slot: 281001224 },
-  { signature: "8pvA...cD12", status: "success", timestamp: "11:42:04", computeUnitsConsumed: 16270, priorityFeeMicrolamports: 6000, confirmationLatencyMs: 751, slot: 281001226 },
-  { signature: "7kPJ...oo91", status: "pending", timestamp: "11:42:07", computeUnitsConsumed: 12090, priorityFeeMicrolamports: 3000, confirmationLatencyMs: 0, slot: 281001232 },
-  { signature: "2vbC...a77Q", status: "dropped", timestamp: "11:42:10", computeUnitsConsumed: 0, priorityFeeMicrolamports: 2000, confirmationLatencyMs: 2120, slot: 281001241 },
-];
+import { useTxPulseSocket } from "@/lib/useTxPulseSocket";
 
 export default function Home() {
   const [address, setAddress] = useState("");
+  const {
+    metrics,
+    events,
+    status,
+    lastError,
+    activeAddress,
+    latencySamples,
+    startMonitoring,
+  } = useTxPulseSocket(address);
 
-  // Derived trend data is memoized for stable chart rendering.
-  const latencySamples = useMemo(
-    () => [920, 870, 1040, 790, 740, 800, 980, 910, 890, 760, 740, 810],
-    [],
-  );
+  const statusText = useMemo(() => {
+    if (lastError) {
+      return `Error: ${lastError}`;
+    }
+
+    if (status === "connected" && activeAddress) {
+      return `Connected to ${activeAddress}`;
+    }
+
+    if (status === "reconnecting") {
+      return "Connection interrupted. Reconnecting with backoff...";
+    }
+
+    if (status === "connecting") {
+      return "Connecting to backend monitor...";
+    }
+
+    return "Enter an address and start monitoring live events.";
+  }, [activeAddress, lastError, status]);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
@@ -53,15 +61,20 @@ export default function Home() {
             TxPulse streams status, confirmation latency, slot lag, and priority fee behavior per address in a single operational view.
           </p>
           <div className="mt-6">
-            <AddressInput value={address} onChange={setAddress} />
+            <AddressInput
+              value={address}
+              onChange={setAddress}
+              onMonitor={startMonitoring}
+              statusText={statusText}
+            />
           </div>
         </motion.section>
 
-        <MetricsGrid metrics={mockMetrics} />
+        <MetricsGrid metrics={metrics} />
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
           <LatencyChart samples={latencySamples} />
-          <TransactionFeed events={mockEvents} />
+          <TransactionFeed events={events} />
         </section>
 
         <footer id="docs" className="pb-8 text-center text-xs text-slate-400">

@@ -1,52 +1,71 @@
 # TxPulse
-![Status](https://img.shields.io/badge/Status-MVP-blueviolet?style=for-the-badge)
-![License](https://img.shields.io/badge/License-Private-red?style=for-the-badge)
 
-![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css)
+![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-Backend-CE412B?style=flat-square&logo=rust)
+![Solana](https://img.shields.io/badge/Solana-RPC-14F195?style=flat-square&logo=solana&logoColor=black)
+![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen?style=flat-square)
 
-![Rust](https://img.shields.io/badge/Rust-Backend-orange?style=for-the-badge&logo=rust)
-![Solana](https://img.shields.io/badge/Solana-RPC-14F195?style=for-the-badge&logo=solana&logoColor=black)
-![Vercel](https://img.shields.io/badge/Vercel-Deployment-black?style=for-the-badge&logo=vercel&logoColor=white)
+TxPulse is a real-time transaction health monitoring dashboard for Solana developers. Input any wallet or program address and instantly monitor transaction performance, confirmation times, failure rates, and priority fees via a live feed.
 
-TxPulse is a real-time transaction health monitoring dashboard for Solana developers. It allows users to input a Solana wallet or program address and instantly monitor transaction performance, confirmation times, failure rates, and priority fees via a live feed.
+All RPC traffic is proxied through a high-throughput Rust middleware, which means no client-side rate limiting and no API keys exposed to the browser.
 
-To ensure high performance and prevent client-side rate limiting, this MVP utilizes a high-throughput Rust middleware to handle Solana RPC WebSocket connections, compute metrics, and stream sanitized updates to a Next.js frontend.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
+
+
+## Overview
+
+TxPulse gives Solana developers a single place to watch transaction health in real time. The frontend connects to a local Rust server over WebSocket. The Rust server handles all Solana RPC subscriptions, computes confirmation latency and priority fees per transaction, and streams a clean JSON payload back to the browser.
+
+
+## Architecture
+
+The system operates on a two-tier model.
+
+1. The Next.js frontend establishes a single WebSocket connection to the Rust backend.
+2. The Rust backend opens a `logsSubscribe` WebSocket connection to the Helius RPC for the requested address.
+3. On each log trigger, Rust fetches the full transaction data via HTTP, calculates confirmation latency and priority fees, and broadcasts a lightweight JSON payload to the frontend.
+
 
 ## Tech Stack
 
-* Frontend: Next.js 14 (App Router), React, TypeScript, Tailwind CSS
-* UI Components: Aceternity UI, Framer Motion, Recharts
-* Backend Engine: Rust, Axum, Tokio
-* Blockchain Integration: Solana SDK, OrbitFlare RPC
+**Frontend**
+- Next.js 14 (App Router)
+- React, TypeScript, Tailwind CSS
+- Aceternity UI, Framer Motion, Recharts
 
-## Architecture Overview
+**Backend**
+- Rust, Axum, Tokio
+- Solana SDK, Helius RPC
 
-The system operates on a two-tier architecture:
-1. The Next.js frontend establishes a single WebSocket connection to the Rust backend.
-2. The Rust backend opens a logsSubscribe WebSocket connection to the OrbitFlare RPC for the requested address.
-3. Upon receiving a log trigger, Rust fetches the full transaction data via HTTP, calculates confirmation latency and priority fees, and broadcasts a lightweight JSON payload back to the Next.js client.
-
-## Prerequisites
-
-Ensure you have the following installed on your local machine:
-* Node.js (v18 or higher)
-* Rust (latest stable toolchain via rustup)
-* Git
 
 ## Getting Started
+
+### Prerequisites
+
+- Node.js v18 or higher
+- Rust stable toolchain via [rustup](https://rustup.rs)
+- Git
 
 ### 1. Clone the Repository
 
 ```bash
-git clone [https://github.com/TXPulse/txpulse.git](https://github.com/TXPulse/txpulse.git)
+git clone https://github.com/TxPulse/txpulse.git
 cd txpulse
 ```
 
-### 2. Setup the Rust Backend
-
-Navigate to the backend directory and run the server. By default, Axum will run on port 3000 (or whichever port you configure in your main.rs).
+### 2. Start the Rust Backend
 
 ```bash
 cd backend
@@ -54,35 +73,106 @@ cargo build
 cargo run
 ```
 
-### 3. Setup the Next.js Frontend
+The Axum server runs on port 3000 by default. You can change this via `SERVER_PORT`.
 
-Open a new terminal window, navigate to the frontend directory, install dependencies, and start the development server.
+### 3. Start the Next.js Frontend
+
+Open a new terminal window:
 
 ```bash
 cd frontend
-npm install
-npm run dev
+yarn install
+yarn dev
 ```
 
-The frontend will be available at http://localhost:3001 (if port 3000 is occupied by the Rust server, Next.js will automatically choose the next available port).
+The frontend will be available at `http://localhost:3001`. If port 3000 is occupied by the backend, Next.js will automatically use the next available port.
+
+Both servers must be running at the same time for the live feed to work.
+
 
 ## Environment Variables
 
-You will need to configure environment variables for both the frontend and backend. Create a .env file in both directories.
+Create a `.env` file in the `backend/` directory and a `.env.local` file in the `frontend/` directory.
 
-### Backend (.env)
-* ORBITFLARE_WS_URL: Your OrbitFlare WebSocket endpoint.
-* ORBITFLARE_HTTP_URL: Your OrbitFlare HTTP endpoint.
-* PORT: The port for the Axum server (default 3000).
+### backend/.env
 
-### Frontend (.env.local)
-* NEXT_PUBLIC_WS_URL: The WebSocket URL for the local Rust server (e.g., ws://127.0.0.1:3000/monitor).
+| Variable | Description |
+|---|---|
+| `Helius_WS_URL` | Your Helius WebSocket endpoint |
+| `Helius_HTTP_URL` | Your Helius HTTP RPC endpoint |
+| `SERVER_HOST` | Bind host for Axum server (default: 0.0.0.0) |
+| `SERVER_PORT` | Port for the Axum server (default: 3000) |
+
+### frontend/.env.local
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_WS_URL` | WebSocket URL for the local Rust server, e.g. `ws://127.0.0.1:3000/monitor` |
+
+Example files are provided as `.env.example` and `.env.local.example` in each directory.
+
+## Current POC Scope
+
+- Backend includes `GET /health` and `GET /monitor/:address` WebSocket endpoint.
+- `/monitor/:address` validates Solana pubkey and streams `NEW_TRANSACTION` plus `METRICS_UPDATE` payloads.
+- Frontend monitor input opens live websocket connection to the backend and auto-reconnects with exponential backoff.
+- This base POC currently emits deterministic simulated events on the backend for demo reliability.
+
+Quick local POC test:
+
+1. Start backend: `cd backend && cargo run`
+2. Start frontend: `cd frontend && yarn dev`
+3. Open the app and paste a valid Solana address.
+4. Click Monitor and observe live metrics/feed updates.
+
 
 ## Project Structure
 
-* /frontend: Contains the Next.js 14 application, Tailwind configuration, and Aceternity UI components.
-* /backend: Contains the Rust/Axum application, RPC subscription logic, and metric computation engine.
+```
+txpulse/
+├── frontend/
+│   ├── app/               # App Router pages and layouts
+│   ├── components/        # UI components
+│   ├── lib/               # WebSocket client, hooks, utilities
+│   └── tailwind.config.ts
+│
+├── backend/
+│   ├── src/
+│   │   ├── main.rs        # Axum entry point and WebSocket handler
+│   │   ├── rpc.rs         # RPC subscription and HTTP fetch logic
+│   │   └── metrics.rs     # Confirmation latency and fee computation
+│   └── Cargo.toml
+│
+├── LICENSE
+└── README.md
+```
+
+
+## Contributing
+
+Contributions are welcome. If you find a bug, have a feature idea, or want to improve the docs, please open an issue or submit a pull request.
+
+Steps to contribute:
+
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feat/your-feature-name`
+3. Make your changes and commit them: `git commit -m "feat: describe your change"`
+4. Push to your fork: `git push origin feat/your-feature-name`
+5. Open a pull request against the `main` branch.
+
+Please follow [Conventional Commits](https://www.conventionalcommits.org) for commit messages. Issues tagged `good first issue` are a good place to start if you are new to the project.
+
+For larger changes, open an issue first to discuss the approach before writing code.
+
 
 ## License
 
-All rights reserved.
+MIT License
+
+Copyright (c) 2026 TxPulse Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
