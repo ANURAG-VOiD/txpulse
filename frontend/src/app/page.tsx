@@ -99,10 +99,16 @@ export default function Home() {
               <div className="mt-9 flex flex-wrap gap-3">
                 <Link
                   href="/app"
-                  className="rounded-full border border-white bg-white px-6 py-3 text-sm font-semibold text-black transition hover:translate-y-[-2px] hover:opacity-90"
+                  className="rounded-full border border-white bg-white px-6 py-3 text-sm font-semibold !text-black shadow-[0_10px_24px_rgba(255,255,255,0.18)] transition hover:translate-y-[-2px] hover:opacity-90"
                 >
-                  Open Live App
+                  Launch Live App
                 </Link>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-4 text-xs text-white/60">
+                <p>Wallet-auth only</p>
+                <p>Live Solana telemetry</p>
+                <p>No API keys in browser</p>
               </div>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-2">

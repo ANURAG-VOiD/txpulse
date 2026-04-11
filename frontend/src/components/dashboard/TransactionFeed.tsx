@@ -24,6 +24,12 @@ function TransactionFeedBase({ events }: TransactionFeedProps) {
         <span className="text-xs text-white/45">{events.length} events cached</span>
       </div>
       <div className="space-y-3">
+        {events.length === 0 && (
+          <div className="rounded-[1.3rem] border border-dashed border-white/15 bg-black/65 p-5 text-sm text-white/65">
+            <p className="font-medium text-white/85">No transactions yet.</p>
+            <p className="mt-2">Keep this page open. New events will appear as soon as the monitored wallet or program produces activity.</p>
+          </div>
+        )}
         {events.map((event, index) => (
           <article
             key={`${event.signature}-${event.slot}-${event.timestamp}-${index}`}
