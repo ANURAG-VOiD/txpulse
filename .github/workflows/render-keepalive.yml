@@ -1,0 +1,23 @@
+name: Render Keepalive
+
+on:
+  schedule:
+    - cron: "*/14 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BACKEND_HEALTHCHECK_URL: ${{ secrets.BACKEND_HEALTHCHECK_URL }}
+    steps:
+      - name: Ping Render backend health endpoint
+        run: |
+          set -euo pipefail
+          URL="${BACKEND_HEALTHCHECK_URL:-https://txpulse-backend.onrender.com/health}"
+          curl -fsS --max-time 20 --retry 2 --retry-delay 3 "$URL" >/dev/null
+          echo "Keepalive success: $URL"
