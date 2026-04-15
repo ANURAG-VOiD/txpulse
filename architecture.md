@@ -1,53 +1,199 @@
-# System Design Architecture: TxPulse (POC / MVP)
+# System Design Architecture: TxPulse
 
-## 1. Architectural Overview
+## 1. Product Vision
 
-For the MVP, TxPulse utilizes a two-tier architecture designed for high-throughput real-time monitoring. It consists of a **Next.js frontend** styled with Aceternity UI, and a **Rust WebSocket middleware** acting as the metrics engine. 
+TxPulse is a transaction reliability platform for Solana developers.
 
-Instead of the browser connecting directly to Helius Dev, the client opens a single WebSocket connection to the Rust backend. The Rust service manages the Solana RPC subscriptions, fetches transaction payloads, calculates metrics, and streams optimized, sanitized updates back to the UI.
+The product solves two core problems in one place:
 
-## 2. Component Breakdown
+1. Real-time transaction health monitoring for wallets and programs.
+2. Failed transaction diagnosis with plain-English explanations and fix guidance.
 
-### A. Frontend Layer (Next.js 14 + Aceternity UI)
-* **Framework:** Next.js 14 (App Router), React, TypeScript.
-* **Styling:** Tailwind CSS, Framer Motion (for Aceternity).
-* **App Shell & Navigation:**
-    * A clean, responsive `layout.tsx` establishing the dark-mode theme.
-    * **Aceternity UI Floating Navbar** (or similar sleek top navigation) to hold branding and basic links.
-* **Core Dashboard:**
-    * **Search Bar:** *Placeholders And Vanish Input* component.
-    * **Metrics Dashboard:** *Bento Grid* component.
-    * **Transaction Feed:** *Tracing Beam* component.
-    * **Background:** *Background Beams* or *Sparkles*.
-    * **Charts:** Recharts (styled to match the dark aesthetic).
+Positioning statement:
 
-### B. Metrics Engine Layer (Rust)
-* **Core Stack:** `axum` (web/WS routing), `tokio` (async runtime), `solana-client` (RPC interaction), `serde_json`.
-* **Responsibilities:**
-    1. Accept WS connections from the Next.js client.
-    2. Open a `logsSubscribe` connection to Helius Dev.
-    3. Fire HTTP `getTransaction` requests upon log triggers.
-    4. Calculate confirmation latency and extract priority fees.
-    5. Push structured `TxEvent` and `MetricsUpdate` JSON payloads to the frontend.
+"Paste a failed Solana transaction hash. Get a plain-English explanation of exactly what went wrong and how to fix it. For developers, by a developer."
 
-## 3. Real-Time Data Flow
-1. User pastes address into the Vanish Input.
-2. Next.js connects to Rust backend: `ws://api.txpulse.xyz/monitor/<ADDRESS>`.
-3. Rust connects to Helius Dev via WS (`logsSubscribe`).
-4. Helius Dev pushes log notification to Rust.
-5. Rust fetches full transaction via HTTP, computes metrics.
-6. Rust broadcasts JSON event to Next.js.
-7. Next.js updates state and animates UI.
+### Right Mental Model
 
-## 4. API & Payload Contracts
+Do not position TxPulse as a broad toolkit. Position it as Solana developer mission control.
 
-### Server -> Client: Transaction Event Payload
+One screen. Two modes:
+
+1. **Watch mode:** live transaction feed for any wallet/program.
+2. **Understand mode:** click any failed transaction and get instant plain-English decode.
+
+This is the product. Additional surfaces are future phases, not current pitch.
+
+## 2. Problem Statement
+
+Today, teams debug reliability issues across fragmented tools: block explorers, raw RPC logs, alerts, and ad-hoc scripts. This slows incident response and increases time-to-fix.
+
+TxPulse unifies detection, diagnosis, and remediation guidance into one workflow.
+
+## 3. Product Goals
+
+1. Reduce mean-time-to-diagnosis for failed Solana transactions.
+2. Provide reliable, low-friction live observability.
+3. Translate low-level runtime/program errors into actionable next steps.
+4. Enable team collaboration with shareable diagnostic URLs.
+
+## 4. System Architecture Overview
+
+TxPulse uses a two-tier architecture:
+
+1. Next.js frontend for monitoring and explainer UX.
+2. Rust backend (Axum + Tokio) for RPC fan-in, processing, and API delivery.
+
+All client traffic goes through the backend. The browser does not connect directly to RPC providers in production mode.
+
+### Why this architecture
+
+- Centralizes RPC retries, throttling, and error handling.
+- Prevents API key exposure in browser clients.
+- Supports deterministic decoding/classification logic.
+- Creates a clean path to usage metering and billing gates.
+
+## 5. Core Interaction Architecture
+
+### 5.1 One-Screen Interaction
+
+The primary app experience is a unified workspace:
+
+1. Left/main area: live transaction feed and metrics (Watch mode).
+2. Right panel: transaction debugger (Understand mode).
+
+Interaction contract:
+
+1. User watches feed.
+2. User clicks failed transaction row.
+3. Right panel immediately renders decode, error explanation, and fix suggestion.
+
+No navigation or context switch should be required for this core flow.
+
+### 5.2 Standalone Debugger Entry
+
+The debugger must also be available as a direct route/tab (for inbound users who start from a shared decode or social post). It cannot be gated behind first opening monitor mode.
+
+Required standalone entry:
+
+- `/explain`
+
+Optional share-driven entry:
+
+- `/s/[hash]`
+
+## 6. Component Breakdown
+
+### A. Frontend Layer (Next.js 14, React, TypeScript)
+
+- App routes:
+  - `/app`: live reliability dashboard.
+  - `/explain`: hash input and decode trigger.
+  - `/explain/[hash]`: canonical explain result page.
+  - `/s/[hash]`: share-friendly public result path.
+- Core UX modules:
+  - monitor input + metrics cards + transaction feed.
+  - integrated failed tx explainer side panel.
+  - share link + copy actions.
+  - billing/upgrade surfaces.
+
+### B. Backend Layer (Rust, Axum, Tokio)
+
+- Monitoring pipeline:
+  - consume `logsSubscribe` stream.
+  - enrich signatures via `getTransaction`.
+  - compute metrics and broadcast updates.
+- Explainer pipeline:
+  - fetch tx by hash.
+  - decode instructions (Anchor IDL-aware when available).
+  - classify error code/category.
+  - generate fix suggestion.
+  - persist + return explain response.
+- Platform services:
+  - usage metering.
+  - Stripe plan enforcement.
+  - share URL lookup.
+
+### C. Integrations
+
+- RPC: Helius (primary), QuickNode (optional fallback strategy).
+- Decoder enrichment: Anchor IDL registry/cache.
+- Billing: Stripe.
+- Optional channel: Discord command that links to explain URLs.
+
+## 7. Core Data Flows
+
+### 6.1 Live Monitoring Flow
+
+1. User enters wallet/program address.
+2. Frontend opens websocket to backend monitor endpoint.
+3. Backend subscribes to logs for address mention filters.
+4. On each event, backend fetches transaction data and computes metrics.
+5. Backend emits `NEW_TRANSACTION` and periodic `METRICS_UPDATE` payloads.
+6. Frontend updates charts/feed in real time.
+
+### 6.2 Failed Transaction Explainer Flow
+
+1. User pastes transaction hash.
+2. Frontend calls `GET /explain/:tx_hash?network=mainnet-beta`.
+3. Backend fetches full transaction from Helius.
+4. Decoder resolves instructions and Anchor context where possible.
+5. Error classifier maps to normalized code + plain-English explanation.
+6. Suggestion engine produces actionable fix guidance.
+7. Result is persisted in `decoded_txs` and usage is logged.
+8. Frontend renders explanation and offers share URL.
+
+### 6.3 Unified Watch -> Understand Flow
+
+1. Feed receives failed transaction event.
+2. User clicks failed row.
+3. Frontend calls explainer endpoint for the selected hash.
+4. Right panel updates in-place with decode/explanation/fix guidance.
+5. User can copy share URL or open full debugger route.
+
+## 8. Data Model
+
+### `decoded_txs`
+
+| Column | Type | Notes |
+|---|---|---|
+| `hash` | text (pk) | tx signature/hash |
+| `network` | text | `mainnet-beta`, `devnet` |
+| `error_code` | text nullable | normalized runtime/program code |
+| `plain_english` | text | human explanation |
+| `fix_suggestion` | text | recommended remediation |
+| `viewed_count` | bigint | share/result view counter |
+| `created_at` | timestamptz | first decode timestamp |
+
+### `users`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid (pk) | internal user id |
+| `email` | text unique | identity/contact |
+| `stripe_id` | text nullable | stripe customer id |
+| `plan` | text | `free`, `pro`, `team` |
+
+### `usage`
+
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | uuid | fk to users |
+| `tx_hash` | text | requested hash |
+| `timestamp` | timestamptz | usage event time |
+
+## 9. API Contracts
+
+### 8.1 Monitoring Stream Payloads
+
+#### `NEW_TRANSACTION`
+
 ```json
 {
   "type": "NEW_TRANSACTION",
   "data": {
     "signature": "5Q...xyz",
-    "status": "success", 
+    "status": "success",
     "timestamp": 1712000000,
     "computeUnitsConsumed": 15400,
     "priorityFeeMicrolamports": 5000,
@@ -57,7 +203,8 @@ Instead of the browser connecting directly to Helius Dev, the client opens a sin
 }
 ```
 
-### Server -> Client: Aggregated Metrics Payload (Sent every 3s)
+#### `METRICS_UPDATE`
+
 ```json
 {
   "type": "METRICS_UPDATE",
@@ -69,35 +216,128 @@ Instead of the browser connecting directly to Helius Dev, the client opens a sin
 }
 ```
 
----
+### 8.2 Explainer Endpoint
 
-## 5. Deployment Strategy (MVP)
-* **Frontend:** Vercel.
-* **Backend:** Dockerized Rust app on AWS EC2 / Fly.io.
+#### `GET /explain/:tx_hash?network=mainnet-beta`
 
----
+```json
+{
+  "hash": "5Q...xyz",
+  "network": "mainnet-beta",
+  "error_code": "AnchorError::ConstraintSeeds",
+  "plain_english": "The PDA account does not match the seeds expected by the program.",
+  "fix_suggestion": "Recompute PDA seeds on the client and ensure seed order and program ID are correct.",
+  "viewed_count": 12,
+  "created_at": "2026-04-15T11:21:12Z",
+  "share_url": "/s/5Q...xyz"
+}
+```
 
-## 6. AI Coding Guidelines & System Prompt
+### 8.3 Other Product Endpoints
 
-**Role & Persona:**
-You are an expert full-stack developer specializing in high-performance Rust backends (`axum`, `tokio`) and modern Next.js 14 (App Router) frontends. Your code must be production-ready, strictly typed, and built for maximum performance. This is a 100% scratch build.
+- `GET /s/:hash` for shareable public explain pages.
+- `POST /api/billing/checkout` for Stripe checkout session creation.
 
-### 0. ABSOLUTE CONSTRAINTS (DO NOT VIOLATE)
-* **No Truncation:** DO NOT use placeholders like `// ... rest of the code` or `/* implementation here */`. Output the entire file, start to finish.
-* **Zero-to-One Build:** Assume an empty repository. You must generate the foundational layout (`layout.tsx`), global CSS, and a top-level navigation component (e.g., Aceternity Floating Navbar) before diving into the specific dashboard views.
-* **No Unwraps:** In Rust, you are strictly forbidden from using `.unwrap()` or `.expect()`. Handle all `Result` and `Option` types explicitly using pattern matching, `?`, or default values.
+## 10. Scope and Positioning Constraints
 
-### 1. Frontend Directives (Next.js & React)
-* **Strict Typing:** Export interfaces for all WebSocket payloads (`TxEvent`, `MetricsUpdate`). Do not use `any`.
-* **State & Architecture:** Manage WebSocket state robustly. The connection logic should ideally live in a custom hook (e.g., `useTxPulseSocket`) to keep UI components clean.
-* **Performance First:** The transaction feed will receive data at high velocity. You MUST use `React.memo`, `useMemo`, and `useCallback` to prevent the Aceternity UI components (like Tracing Beam and Bento Grid) from causing cascading re-renders. 
-* **Client Components:** Aceternity UI components heavily rely on `framer-motion` and browser APIs. Ensure any component using hooks or animations is strictly marked with `"use client"` at the very top of the file.
-* **Styling Utilities:** Always generate and use a utility function (e.g., `cn` wrapping `clsx` and `tailwind-merge`) when applying conditional Tailwind classes to prevent style conflicts.
-* **WebSocket Resilience:** Implement automatic reconnection logic with exponential backoff for the client-side WebSocket connection.
+1. Pitch stays focused on one sentence: watch every transaction in real time, and explain in plain English why failures happened.
+2. Do not market as a full "Solana dev toolkit" at this stage.
+3. Avoid adding unrelated tabs/features before core watch-understand loop is polished.
 
-### 2. Backend Directives (Rust & Axum)
-* **Error Handling:** Use `anyhow` for application-level errors or define custom error enums using `thiserror`. Propagate errors using the `?` operator. Log errors using the `tracing` crate; do not panic.
-* **Concurrency:** Leverage `tokio` effectively. Manage state across WebSocket connections using `Arc<RwLock<T>>` or `tokio::sync::broadcast` channels. Ensure disconnected clients are cleanly removed from state to prevent memory leaks.
-* **Solana RPC Boundaries:** * Implement a basic retry mechanism with backoff when fetching `getTransaction` via HTTP to handle Helius Dev rate limits or timeouts.
-    * Use `Option<T>` for fields in the transaction payload that might be missing (e.g., older transactions lacking priority fee data).
-* **Graceful Shutdown:** Implement signal handlers to cleanly close RPC subscriptions and WebSocket connections when the server process is terminated.
+### Sequencing Rule
+
+- Alerts fits naturally as the third capability after watch and understand.
+- Product sequence: Watch -> Understand -> Get notified.
+- Alerts is explicitly phase 3, not phase 1.
+
+## 11. Non-Functional Requirements
+
+### Reliability
+
+- WebSocket reconnect/backoff for monitor sessions.
+- RPC retry/backoff and timeout control for `getTransaction`.
+- Graceful degradation when optional decode metadata is missing.
+
+### Performance
+
+- Keep monitor event handling non-blocking with async tasks/channels.
+- Bound memory for rolling metrics and active connection maps.
+- Cache decoded explain results for repeat hash lookups.
+
+### Security
+
+- No client-side RPC API keys.
+- Validate input formats (pubkey/tx hash/network).
+- Plan-aware limits via usage metering and Stripe-backed access control.
+
+### Observability
+
+- Structured logs for RPC errors, decode failures, and disconnects.
+- Track explainer request volume and top error categories.
+
+## 12. Deployment Topology
+
+- Frontend: Vercel.
+- Backend: Dockerized Rust service on Fly.io/Render/Railway/AWS.
+- Data store: Postgres (for decoded results, users, usage).
+
+Required runtime configuration:
+
+- `HELIUS_HTTP_URL`
+- `HELIUS_WS_URL`
+- `SERVER_HOST`
+- `SERVER_PORT`
+- `RUST_LOG`
+- `NEXT_PUBLIC_WS_URL`
+- `NEXT_PUBLIC_API_BASE_URL`
+
+## 13. Current Status and Mainnet Path
+
+### Current status
+
+- Live monitoring pipeline is active in dev/prototype environments.
+- Product-level explainer contracts, scope, and data model are defined.
+
+### Mainnet blockers
+
+1. Hardening reconnect/backoff and timeout behavior.
+2. Full error-classifier coverage for common failure families.
+3. Plan-aware metering and billing enforcement.
+4. Production observability and alerting.
+
+### Launch milestones
+
+1. Helius integration hardened for sustained websocket + HTTP load.
+2. Mainnet-ready one-screen watch-understand flow.
+3. Production hardening and billing integration.
+4. Public launch with shareable explain URLs.
+
+### Near-Term Execution Plan (Two Weeks)
+
+Week 1:
+
+1. Ship debugger pipeline.
+2. Integrate debugger directly into feed click interactions.
+3. Ensure right-panel decode is reliable and fast.
+
+Week 2:
+
+1. Polish onboarding and first-run UX.
+2. Improve decode clarity and suggestion quality.
+3. Validate with at least 5 active users.
+
+## 14. Risks and Mitigations
+
+- RPC variance across providers:
+  - Mitigation: Helius primary configuration, fallback abstraction for secondary providers.
+- Incomplete decode context for non-Anchor/custom programs:
+  - Mitigation: deterministic fallback classifier and transparent confidence labeling.
+- High-traffic addresses causing burst pressure:
+  - Mitigation: bounded queues, backpressure, and dedupe in streaming pipeline.
+
+## 15. Future Extensions
+
+- Multi-address team dashboards.
+- Alerting (email/Telegram/Discord) as the third major product capability.
+- Historical analytics and trend summaries.
+- Public API for exporting reliability and explain insights.

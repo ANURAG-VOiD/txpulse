@@ -7,7 +7,7 @@
 ![Solana](https://img.shields.io/badge/Solana-RPC-14F195?style=flat-square&logo=solana&logoColor=black)
 ![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen?style=flat-square)
 
-TxPulse is a real-time transaction health monitoring dashboard for Solana developers. Input any wallet or program address and instantly monitor transaction performance, confirmation times, failure rates, and priority fees via a live feed.
+TxPulse is a Solana developer product for transaction reliability. It solves two core problems in one workflow: real-time transaction health monitoring and failed-transaction root-cause explanation with actionable fixes.
 
 All RPC traffic is proxied through a high-throughput Rust middleware, which means no client-side rate limiting and no API keys exposed to the browser.
 
@@ -15,7 +15,10 @@ All RPC traffic is proxied through a high-throughput Rust middleware, which mean
 ## Table of Contents
 
 - [Overview](#overview)
+- [Problem Statement](#problem-statement)
 - [Architecture](#architecture)
+- [Failed Transaction Explainer](#failed-transaction-explainer)
+- [Core API Surface](#core-api-surface)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
@@ -26,7 +29,21 @@ All RPC traffic is proxied through a high-throughput Rust middleware, which mean
 
 ## Overview
 
-TxPulse gives Solana developers a single place to watch transaction health in real time. The frontend connects to a local Rust server over WebSocket. The Rust server handles all Solana RPC subscriptions, computes confirmation latency and priority fees per transaction, and streams a clean JSON payload back to the browser.
+TxPulse gives Solana developers a single place to diagnose and improve transaction reliability. The product is built around two primary use cases:
+
+1. Monitor transaction health in real time for any wallet or program address.
+2. Explain failed transactions in plain English and suggest concrete fixes.
+
+The frontend connects to a local Rust server over WebSocket. The Rust server handles Solana RPC subscriptions, computes confirmation latency and priority fees, and powers transaction decode/explanation flows.
+
+## Problem Statement
+
+Solana teams usually debug transaction reliability across multiple disconnected tools: explorers, custom logs, RPC dashboards, and internal scripts. This creates slow incident response and unclear ownership when transactions fail under production load.
+
+TxPulse addresses this with one product surface:
+
+1. Observe reliability in real time.
+2. Explain failures in plain English with suggested fixes.
 
 
 ## Architecture
@@ -36,6 +53,97 @@ The system operates on a two-tier model.
 1. The Next.js frontend establishes a single WebSocket connection to the Rust backend.
 2. The Rust backend opens a `logsSubscribe` WebSocket connection to the Helius RPC for the requested address.
 3. On each log trigger, Rust fetches the full transaction data via HTTP, calculates confirmation latency and priority fees, and broadcasts a lightweight JSON payload to the frontend.
+
+## Failed Transaction Explainer
+
+Positioning statement:
+
+"Paste a failed Solana transaction hash. Get a plain-English explanation of exactly what went wrong and how to fix it. For developers, by a developer."
+
+TxPulse includes a built-in failed-transaction explainer experience alongside live monitoring.
+
+### Product Scope
+
+- Input field for a transaction hash.
+- Solana RPC integration to fetch full transaction data (`getTransaction`).
+- Instruction decoder (Anchor IDL-aware where available).
+- Error classifier that maps known program/runtime error codes to human-readable explanations.
+- Fix suggestion engine using pattern-matched remediation guidance.
+- Simple web UI with a shareable result URL.
+
+### Product Principle
+
+Every failed transaction explanation should answer three questions in under 30 seconds:
+
+1. What failed?
+2. Why did it fail?
+3. What should I change next?
+
+### Integrations
+
+- Solana RPC provider: Helius or QuickNode (recommended for reliability).
+- Anchor IDL registry/source for instruction and error decoding.
+- Stripe for billing and plan limits.
+- Optional: Discord bot command for quick transaction explain lookup.
+
+### Data Model
+
+#### `decoded_txs`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `hash` | text (pk) | Solana transaction signature/hash |
+| `network` | text | `mainnet-beta`, `devnet`, etc. |
+| `error_code` | text nullable | Normalized error code (if available) |
+| `plain_english` | text | Human explanation of what failed |
+| `fix_suggestion` | text | Suggested next action to fix issue |
+| `viewed_count` | bigint | Popularity/usage counter |
+| `created_at` | timestamptz | First decode timestamp |
+
+#### `users`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | uuid (pk) | Internal user id |
+| `email` | text unique | Login/contact |
+| `stripe_id` | text nullable | Stripe customer id |
+| `plan` | text | `free`, `pro`, `team` |
+
+#### `usage`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `user_id` | uuid | FK to `users.id` |
+| `tx_hash` | text | Queried tx hash |
+| `timestamp` | timestamptz | Access time |
+
+## Core API Surface
+
+- `GET /explain/:tx_hash?network=mainnet-beta`
+- `GET /s/:hash` (shareable short/public result link)
+- `POST /api/billing/checkout` (Stripe checkout session)
+
+### Example Explainer Response
+
+```json
+{
+	"hash": "5Q...xyz",
+	"network": "mainnet-beta",
+	"error_code": "AnchorError::ConstraintSeeds",
+	"plain_english": "The PDA account does not match the seeds expected by the program.",
+	"fix_suggestion": "Recompute PDA seeds on the client and ensure program ID and seed order match exactly.",
+	"share_url": "/s/5Q...xyz"
+}
+```
+
+### Product Build Plan
+
+1. RPC retrieval and decode pipeline.
+2. Error classification + fix suggestion dictionary.
+3. UI for hash input and explanation rendering.
+4. Persist decoded results and usage analytics.
+5. Shareable URL and Stripe gating.
+6. Optional Discord command.
 
 
 ## Tech Stack
@@ -109,16 +217,22 @@ Create a `.env` file in the `backend/` directory and a `.env.local` file in the 
 | Variable | Description |
 |---|---|
 | `NEXT_PUBLIC_WS_URL` | WebSocket URL for the local Rust server, e.g. `ws://127.0.0.1:3000/monitor` |
+| `NEXT_PUBLIC_API_BASE_URL` | HTTP API base URL for explainer and billing routes |
 
 Example files are provided as `backend/.env.example` and `frontend/.env.local.example`.
 
-## Current POC Scope
+## Current Product Status
 
 - Backend includes `GET /health` and `GET /monitor/:address` WebSocket endpoint.
 - `/monitor/:address` validates Solana pubkey and streams `NEW_TRANSACTION` plus `METRICS_UPDATE` payloads.
 - Backend opens `logsSubscribe` to Helius (`HELIUS_WS_URL`) and enriches each log-triggered signature via `getTransaction` over HTTP (`HELIUS_HTTP_URL`).
 - Frontend monitor input opens live websocket connection to the backend and auto-reconnects with exponential backoff.
 - POC emits live address activity (deduped) with rolling metrics.
+
+Explainer workflow status:
+
+- Positioning, product scope, data model, and API surface are defined.
+- Instruction decoding, error classification, and suggestion engine are the next implementation milestones.
 
 Quick local POC test:
 

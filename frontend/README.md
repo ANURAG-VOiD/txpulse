@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TxPulse Frontend
+
+Frontend app for TxPulse, built with Next.js App Router and TypeScript.
+
+This frontend supports real-time Solana transaction health monitoring and a built-in failed transaction explainer workflow.
+
+## Product Pillars
+
+1. Live reliability visibility for wallet and program activity.
+2. Fast failure diagnosis from tx hash to plain-English explanation.
+3. Shareable outputs for team collaboration and incident response.
+
+## Failed Transaction Explainer
+
+Positioning statement:
+
+"Paste a failed Solana transaction hash. Get a plain-English explanation of exactly what went wrong and how to fix it. For developers, by a developer."
+
+This is a core workflow in the app, with existing live monitoring views continuing as primary dashboards.
+
+### MVP Frontend Product Scope
+
+- Tx hash input field.
+- Network selector.
+- Result view with:
+	- decoded failure summary,
+	- plain-English explanation,
+	- fix suggestion.
+- Shareable result URL page.
+
+### UX Quality Bar
+
+- A developer should understand failure cause and next action in under 30 seconds.
+- Explanation output should prioritize clarity over protocol jargon.
+- Share links should be stable and easy to post in team chats or tickets.
 
 ## Getting Started
 
-First, run the development server:
+Run the development server:
 
 ```bash
-npm run dev
-# or
+yarn install
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3001` (or the port reported by Next.js).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Use `.env.local` in this directory.
 
-## Learn More
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_WS_URL` | WebSocket endpoint for live monitoring backend |
+| `NEXT_PUBLIC_API_BASE_URL` | HTTP API base for explainer endpoints |
 
-To learn more about Next.js, take a look at the following resources:
+## Planned Frontend Routes (Product Docs)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `/app` - live monitoring dashboard.
+- `/explain` - hash input and decode trigger.
+- `/explain/[hash]` - rendered explainer result page.
+- `/s/[hash]` - public/share-friendly result path.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Integration Notes
 
-## Deploy on Vercel
+- Solana transaction retrieval and decode happen via backend APIs.
+- Anchor IDL-aware decoding is surfaced as enriched labels in UI when available.
+- Stripe flows are consumed from frontend for plan upgrades.
+- Optional Discord command remains external and links back to the share URL.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Current Implementation Status
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Live monitoring UX is active and tied to backend WebSocket streaming.
+- Explainer routes and contracts are documented and ready for implementation.
+- Billing and plan-gating flows are planned in integration phase.
