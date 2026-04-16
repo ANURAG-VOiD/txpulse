@@ -11,19 +11,18 @@ export function FloatingNav() {
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
-      className="sticky top-4 z-30"
+      className="sticky top-2 z-30"
     >
-      <div className="mx-auto flex w-full max-w-6xl justify-center px-3 sm:px-4">
+      <div className="mx-auto flex w-full max-w-7xl px-1 sm:px-2">
         <motion.div
           whileHover={{ y: -1 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative inline-flex w-auto items-center justify-center gap-5 overflow-hidden rounded-full border border-white/20 bg-black/45 px-6 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.38)] backdrop-blur-xl sm:gap-6 sm:px-7"
+          className="relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-white/15 bg-black/60 px-3 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-4"
         >
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.18),rgba(255,255,255,0.03)_35%,transparent_70%)]" />
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.12),rgba(255,255,255,0.02)_35%,transparent_70%)]" />
 
-          <Link href="/" className="relative flex items-center gap-2.5 rounded-full border border-transparent px-1 py-0.5 transition hover:border-white/20">
-            <span className="overflow-hidden rounded-full border border-white/20 bg-white/5">
+          <Link href="/" className="relative flex items-center gap-2.5 rounded-lg border border-transparent px-1.5 py-1 transition hover:border-white/20 hover:bg-white/[0.04]">
+            <span className="overflow-hidden rounded-md border border-white/20 bg-white/5">
               <Image
                 src="/txpulse.png"
                 alt="TxPulse logo"
@@ -33,24 +32,34 @@ export function FloatingNav() {
                 priority
               />
             </span>
-            <p className="text-[11px] font-semibold tracking-[0.24em] text-white uppercase">TxPulse</p>
+            <div>
+              <p className="text-[11px] font-semibold tracking-[0.18em] text-white uppercase">TxPulse</p>
+              <p className="text-[10px] text-white/55">Reliability Console</p>
+            </div>
           </Link>
 
-          <div className="relative hidden items-center gap-5 sm:flex">
-            <a className="text-[12px] text-white/72 transition-colors hover:text-white" href="#overview">
+          <div className="relative hidden items-center gap-1 md:flex">
+            <a className="rounded-md px-2.5 py-1.5 text-[12px] text-white/72 transition-colors hover:bg-white/[0.06] hover:text-white" href="#overview">
               Overview
             </a>
-            <a className="text-[12px] text-white/72 transition-colors hover:text-white" href="#dashboard">
+            <a className="rounded-md px-2.5 py-1.5 text-[12px] text-white/72 transition-colors hover:bg-white/[0.06] hover:text-white" href="#dashboard">
               Dashboard
             </a>
-            <a className="text-[12px] text-white/72 transition-colors hover:text-white" href="#feed">
+            <a className="rounded-md px-2.5 py-1.5 text-[12px] text-white/72 transition-colors hover:bg-white/[0.06] hover:text-white" href="#feed">
               Live Feed
             </a>
-            <Link className="text-[12px] text-white/72 transition-colors hover:text-white" href="/docs">
+            <a className="rounded-md px-2.5 py-1.5 text-[12px] text-white/72 transition-colors hover:bg-white/[0.06] hover:text-white" href="#understand">
+              Understand
+            </a>
+            <Link className="rounded-md px-2.5 py-1.5 text-[12px] text-white/72 transition-colors hover:bg-white/[0.06] hover:text-white" href="/explain">
+              Decoder
+            </Link>
+            <Link className="rounded-md px-2.5 py-1.5 text-[12px] text-white/72 transition-colors hover:bg-white/[0.06] hover:text-white" href="/docs">
               Docs
             </Link>
           </div>
 
+          <div className="text-[11px] text-white/55 md:hidden">Sections</div>
         </motion.div>
       </div>
     </motion.nav>

@@ -64,7 +64,9 @@ export function useTxPulseSocket(address: string) {
   const manualCloseRef = useRef(false);
   const connectRef = useRef<(nextAddress: string) => void>(() => {});
   const pendingEventsRef = useRef<TxEvent[]>([]);
+  const pendingMetricsRef = useRef<MetricsUpdate | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const metricsFrameRef = useRef<number | null>(null);
   const seenEventKeysRef = useRef<Set<string>>(new Set());
   const seenEventOrderRef = useRef<string[]>([]);
 
@@ -121,6 +123,38 @@ export function useTxPulseSocket(address: string) {
     animationFrameRef.current = window.requestAnimationFrame(flushPendingEvents);
   }, [flushPendingEvents]);
 
+  const flushPendingMetrics = useCallback(() => {
+    metricsFrameRef.current = null;
+    const nextMetrics = pendingMetricsRef.current;
+    if (!nextMetrics) {
+      return;
+    }
+
+    pendingMetricsRef.current = null;
+    setMetrics((current) => {
+      if (
+        current.successRatePct === nextMetrics.successRatePct
+        && current.avgConfirmationMs === nextMetrics.avgConfirmationMs
+        && current.currentSlotLag === nextMetrics.currentSlotLag
+        && current.txPerMinute === nextMetrics.txPerMinute
+      ) {
+        return current;
+      }
+
+      return nextMetrics;
+    });
+  }, []);
+
+  const queueMetrics = useCallback((nextMetrics: MetricsUpdate) => {
+    pendingMetricsRef.current = nextMetrics;
+
+    if (metricsFrameRef.current !== null) {
+      return;
+    }
+
+    metricsFrameRef.current = window.requestAnimationFrame(flushPendingMetrics);
+  }, [flushPendingMetrics]);
+
   const disconnect = useCallback(() => {
     manualCloseRef.current = true;
     clearReconnectTimer();
@@ -133,6 +167,7 @@ export function useTxPulseSocket(address: string) {
     setStatus("idle");
     setActiveAddress(null);
     pendingEventsRef.current = [];
+    pendingMetricsRef.current = null;
     seenEventKeysRef.current.clear();
     seenEventOrderRef.current = [];
   }, [clearReconnectTimer]);
@@ -155,6 +190,7 @@ export function useTxPulseSocket(address: string) {
     setStatus("connecting");
     setActiveAddress(sanitizedAddress);
     pendingEventsRef.current = [];
+    pendingMetricsRef.current = null;
     seenEventKeysRef.current.clear();
     seenEventOrderRef.current = [];
 
@@ -190,18 +226,7 @@ export function useTxPulseSocket(address: string) {
       }
 
       if (payload.type === "METRICS_UPDATE") {
-        setMetrics((current) => {
-          if (
-            current.successRatePct === payload.data.successRatePct
-            && current.avgConfirmationMs === payload.data.avgConfirmationMs
-            && current.currentSlotLag === payload.data.currentSlotLag
-            && current.txPerMinute === payload.data.txPerMinute
-          ) {
-            return current;
-          }
-
-          return payload.data;
-        });
+        queueMetrics(payload.data);
       }
     };
 
@@ -225,7 +250,7 @@ export function useTxPulseSocket(address: string) {
 
       reconnectWithBackoff();
     };
-  }, [baseWsUrl, clearReconnectTimer, queueEvent]);
+  }, [baseWsUrl, clearReconnectTimer, queueEvent, queueMetrics]);
 
   const startMonitoring = useCallback((nextAddress?: string) => {
     const selectedAddress = (nextAddress ?? address).trim();
@@ -259,11 +284,16 @@ export function useTxPulseSocket(address: string) {
       manualCloseRef.current = true;
       clearReconnectTimer();
       pendingEventsRef.current = [];
+      pendingMetricsRef.current = null;
       seenEventKeysRef.current.clear();
       seenEventOrderRef.current = [];
 
       if (animationFrameRef.current !== null) {
         window.cancelAnimationFrame(animationFrameRef.current);
+      }
+
+      if (metricsFrameRef.current !== null) {
+        window.cancelAnimationFrame(metricsFrameRef.current);
       }
 
       if (socketRef.current) {

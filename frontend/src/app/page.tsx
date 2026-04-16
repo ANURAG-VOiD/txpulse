@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { StreamingStatsCard } from "@/components/dashboard/StreamingStatsCard";
 
 const pillars = [
   {
@@ -36,8 +37,8 @@ const steps = [
   },
   {
     label: "Step 03",
-    title: "Tune and Iterate",
-    text: "Use observed latency and fee behavior to tighten your execution strategy.",
+    title: "Decode Failed Tx",
+    text: "Open Understand mode to decode failed hashes in plain English and apply concrete next fixes.",
   },
 ];
 
@@ -93,7 +94,7 @@ export default function Home() {
                 before users do.
               </h1>
               <p className="mt-6 max-w-2xl text-sm leading-7 text-white/68 sm:text-base">
-                TxPulse gives your team a live surface for confirmation behavior, slot drift, fee pressure, and reliability so you can tune Solana transaction flows with confidence.
+                TxPulse gives your team one workspace to watch confirmation behavior in real time and decode failed signatures with next-step fixes.
               </p>
 
               <div className="mt-9 flex flex-wrap gap-3">
@@ -103,11 +104,18 @@ export default function Home() {
                 >
                   Launch Live App
                 </Link>
+                <Link
+                  href="/explain"
+                  className="rounded-full border border-white/20 bg-black/70 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/35 hover:bg-white/10"
+                >
+                  Open Decoder
+                </Link>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-4 text-xs text-white/60">
                 <p>Wallet-auth only</p>
                 <p>Live Solana telemetry</p>
+                <p>Failed tx decoder</p>
                 <p>No API keys in browser</p>
               </div>
 
@@ -124,38 +132,7 @@ export default function Home() {
               </div>
             </div>
 
-            <aside className="reveal-up relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5 [animation-delay:220ms]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(255,255,255,0.16),transparent_36%)]" />
-              <div className="relative">
-                <p className="text-[11px] uppercase tracking-[0.3em] text-white/50">Now streaming</p>
-                <p className="mt-3 text-3xl font-semibold tracking-[-0.03em]">21,483 tx/hr</p>
-                <p className="mt-1 text-sm text-white/60">observed sample traffic</p>
-
-                <div className="mt-6 space-y-3">
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-3">
-                    <div className="flex items-center justify-between text-xs text-white/50">
-                      <span>Median Confirm</span>
-                      <span>+7.2%</span>
-                    </div>
-                    <p className="mt-1 text-lg font-medium">402ms</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-3">
-                    <div className="flex items-center justify-between text-xs text-white/50">
-                      <span>Success Rate</span>
-                      <span>stable</span>
-                    </div>
-                    <p className="mt-1 text-lg font-medium">99.14%</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-3">
-                    <div className="flex items-center justify-between text-xs text-white/50">
-                      <span>Slot Lag</span>
-                      <span>recovering</span>
-                    </div>
-                    <p className="mt-1 text-lg font-medium">1.8 slots</p>
-                  </div>
-                </div>
-              </div>
-            </aside>
+            <StreamingStatsCard />
           </div>
         </section>
 

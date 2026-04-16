@@ -36,6 +36,12 @@ export default function DocsPage() {
                   Open App
                 </Link>
                 <Link
+                  href="/explain"
+                  className="rounded-full border border-white/20 bg-black/70 px-5 py-2.5 text-white transition hover:border-white/35 hover:bg-white/10"
+                >
+                  Open Decoder
+                </Link>
+                <Link
                   href="/admin"
                   className="rounded-full border border-white/20 bg-black/70 px-5 py-2.5 text-white transition hover:border-white/35 hover:bg-white/10"
                 >
