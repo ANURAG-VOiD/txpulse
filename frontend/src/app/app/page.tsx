@@ -75,7 +75,7 @@ export default function MonitorAppPage() {
 
   const statusText = useMemo(() => {
     if (!connected) {
-      return "Connect your Solana wallet to start wallet-based monitoring.";
+      return "Connect your Solana wallet to begin wallet-linked monitoring.";
     }
 
     if (lastError) {
@@ -272,12 +272,11 @@ export default function MonitorAppPage() {
         <FloatingNav />
 
         <section id="overview" className="relative overflow-hidden border-b border-white/12 pb-6 sm:pb-7">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.12),transparent_26%),radial-gradient(circle_at_82%_0%,rgba(255,255,255,0.08),transparent_28%)]" />
-          <div className="relative">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="relative text-center">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/60 px-3 py-1.5 transition hover:border-white/30 hover:bg-white/10"
+                className="tx-btn inline-flex items-center gap-2 px-4 py-2 text-xs"
               >
                 <Image
                   src="/txpulse.png"
@@ -287,23 +286,23 @@ export default function MonitorAppPage() {
                   className="h-[18px] w-[18px] rounded-full object-cover"
                   priority
                 />
-                <p className="text-[10px] uppercase tracking-[0.3em] text-white/45">Watch mode</p>
+                <span>Watch mode</span>
               </Link>
 
               <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href="/explain"
-                  className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold text-white transition hover:border-white/35 hover:bg-white/10"
+                  className="tx-btn px-4 py-2 text-xs"
                 >
                   Open Tx Decoder
                 </Link>
                 {isMounted ? (
-                  <WalletMultiButton className="!h-10 !rounded-full !border !border-white/20 !bg-black/70 !px-4 !text-sm !text-white !shadow-none hover:!bg-white/10" />
+                  <WalletMultiButton className="!h-10 !rounded-xl !border !border-white/15 !bg-white/[0.04] !px-4 !text-sm !font-medium !text-white !shadow-none !transition hover:!border-white/30 hover:!bg-white/[0.1] focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-white/35 active:!translate-y-[1px]" />
                 ) : (
                   <button
                     type="button"
                     disabled
-                    className="h-10 rounded-full border border-white/20 bg-black/70 px-4 text-sm text-white/70"
+                    className="tx-btn h-10 px-4 text-sm"
                   >
                     Connect Wallet
                   </button>
@@ -314,20 +313,14 @@ export default function MonitorAppPage() {
             <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
               Solana reliability command center
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-white/68 sm:text-base">
-              Monitor live transaction health and move straight into failed transaction diagnosis without leaving this page.
+            <p className="mx-auto mt-3 max-w-3xl text-sm leading-6 text-white/68 sm:text-base">
+              Monitor live transaction health and diagnose failures in one place.
             </p>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2" aria-live="polite">
-              <span className={`rounded-full border px-3 py-1.5 text-xs ${statusTone}`}>
-                {status}
-              </span>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2" aria-live="polite">
               <span className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70">
                 <span className={`mr-2 inline-block h-1.5 w-1.5 rounded-full ${connectionDotTone}`} />
                 {statusText}
-              </span>
-              <span className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70">
-                Target {activeAddress ? shortenAddress(activeAddress) : "none"}
               </span>
               {walletAddress && (
                 <span className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70">
@@ -347,7 +340,7 @@ export default function MonitorAppPage() {
                 stopDisabled={status === "idle"}
               />
               {connected && walletAddress && (
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/65">
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-white/65">
                   <span>Phantom authenticates this session. You can still monitor any wallet or program address.</span>
                   <button
                     type="button"
@@ -355,7 +348,7 @@ export default function MonitorAppPage() {
                       setAddress(walletAddress);
                       startMonitoring(walletAddress);
                     }}
-                    className="rounded-full border border-white/15 px-3 py-1 transition hover:border-white/30 hover:bg-white/10"
+                    className="tx-btn-ghost px-3 py-1 text-xs"
                   >
                     Use Connected Wallet
                   </button>
@@ -363,7 +356,7 @@ export default function MonitorAppPage() {
               )}
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 border-y border-white/10 py-4">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 border-y border-white/10 py-4">
               {kpiCards.map((card) => (
                 <div key={card.label} className="min-w-[140px] border-l border-white/15 pl-3 first:border-l-0 first:pl-0">
                   <p className="text-[10px] uppercase tracking-[0.24em] text-white/45">{card.label}</p>
@@ -372,23 +365,25 @@ export default function MonitorAppPage() {
               ))}
             </div>
 
-            <p className="mt-4 border-l-2 border-white/25 pl-3 text-xs text-white/72">
+            <p className="mx-auto mt-4 max-w-3xl border-l-2 border-white/25 pl-3 text-left text-xs text-white/72">
               Operator note: {suggestedAction}
             </p>
           </div>
         </section>
 
         <section className="grid gap-6 xl:grid-cols-2">
-          <section
-            id="dashboard"
-            className="border-t border-white/12 pt-4 sm:pt-5"
-          >
+          <section id="dashboard" className="border border-white/10 bg-white/[0.02] p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] uppercase tracking-[0.3em] text-white/45">Latency Trend</p>
-              <span className="text-xs text-white/55">Direction {latencyDirection}</span>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-white/45">Latency Trend</p>
+                <p className="mt-1 text-xs text-white/55">Live confirmation timing and drift behavior</p>
+              </div>
+              <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/70">
+                Direction {latencyDirection}
+              </span>
             </div>
 
-            <div className="mt-3 border border-white/10 bg-black/50 p-2 sm:p-3">
+            <div className="mt-4 border border-white/10 bg-black/55 p-2 sm:p-3">
               <svg
                 viewBox={`0 0 ${latencyChart.width} ${latencyChart.height}`}
                 className="h-44 w-full"
@@ -437,25 +432,29 @@ export default function MonitorAppPage() {
               </svg>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-white/75">
-              <span className="rounded-full border border-white/15 bg-white/[0.03] px-2.5 py-1">
-                Latest {latencyHasLiveData ? `${latencyChart.latest.sample} ms` : "-"}
-              </span>
-              <span className="rounded-full border border-white/15 bg-white/[0.03] px-2.5 py-1">
-                Avg {latencyHasLiveData ? `${latencyAvg} ms` : "-"}
-              </span>
-              <span className="rounded-full border border-white/15 bg-white/[0.03] px-2.5 py-1">
-                Peak {latencyHasLiveData ? `${latencyPeak} ms` : "-"}
-              </span>
-              <span className="rounded-full border border-white/15 bg-white/[0.03] px-2.5 py-1">
-                Failed {failedEventsCount}
-              </span>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="border border-white/10 bg-black/45 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.17em] text-white/45">Latest</p>
+                <p className="mt-1 text-sm font-medium text-white">{latencyHasLiveData ? `${latencyChart.latest.sample} ms` : "--"}</p>
+              </div>
+              <div className="border border-white/10 bg-black/45 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.17em] text-white/45">Average</p>
+                <p className="mt-1 text-sm font-medium text-white">{latencyHasLiveData ? `${latencyAvg} ms` : "--"}</p>
+              </div>
+              <div className="border border-white/10 bg-black/45 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.17em] text-white/45">Peak</p>
+                <p className="mt-1 text-sm font-medium text-white">{latencyHasLiveData ? `${latencyPeak} ms` : "--"}</p>
+              </div>
+              <div className="border border-white/10 bg-black/45 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.17em] text-white/45">Failed</p>
+                <p className="mt-1 text-sm font-medium text-white">{failedEventsCount}</p>
+              </div>
             </div>
           </section>
 
           <aside
             id="understand"
-            className="h-fit border-t border-white/12 pt-4 sm:pt-5 xl:sticky xl:top-24 xl:border-l xl:border-t-0 xl:pl-5"
+            className="h-fit border border-white/10 bg-white/[0.02] p-4 sm:p-5 xl:sticky xl:top-24"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-[11px] uppercase tracking-[0.3em] text-white/45">Understand Mode</p>
@@ -478,29 +477,28 @@ export default function MonitorAppPage() {
                 placeholder="Failed transaction signature"
                 className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-xs text-white outline-none transition placeholder:text-white/30 focus:border-white/30 focus:ring-1 focus:ring-white/30"
               />
-              <div className="inline-flex w-full flex-wrap gap-2 rounded-xl border border-white/12 bg-black/50 p-1.5" role="tablist" aria-label="Select decode network">
-                {networkOptions.map((option) => {
-                  const selected = explainNetwork === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      role="tab"
-                      aria-selected={selected}
-                      onClick={() => setExplainNetwork(option.value)}
-                      className={`rounded-lg px-3 py-2 text-xs font-medium tracking-[0.04em] transition ${selected ? "bg-white text-black" : "text-white/78 hover:bg-white/10"}`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_auto]">
+                <label className="relative block" aria-label="Select decode network">
+                  <select
+                    value={explainNetwork}
+                    onChange={(event) => setExplainNetwork(event.target.value as SolanaNetwork)}
+                    className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 pr-9 text-xs text-white outline-none transition focus:border-white/30 focus:ring-1 focus:ring-white/30"
+                  >
+                    {networkOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/55" aria-hidden="true">
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </label>
                 <button
                   type="button"
                   onClick={() => void runExplain(selectedFailureHash)}
                   disabled={!isLikelySolanaSignature(selectedFailureHash) || explaining}
-                  className="rounded-xl border border-white bg-white px-3 py-2.5 text-xs font-semibold !text-black transition disabled:cursor-not-allowed disabled:border-white/15 disabled:bg-white/15 disabled:text-white/30"
+                  className="tx-btn-primary px-3 py-2.5 text-xs"
                 >
                   {explaining ? "Running" : "Decode"}
                 </button>
@@ -513,7 +511,7 @@ export default function MonitorAppPage() {
                     }
                   }}
                   disabled={!latestFailedSignature}
-                  className="rounded-xl border border-white/20 bg-black/70 px-3 py-2.5 text-xs font-semibold text-white transition hover:border-white/35 hover:bg-white/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-black/40 disabled:text-white/35"
+                  className="tx-btn px-3 py-2.5 text-xs"
                 >
                   Use latest failed
                 </button>
@@ -521,14 +519,14 @@ export default function MonitorAppPage() {
             </div>
 
             {explainError && (
-              <div className="mt-3 rounded-xl border border-white/15 bg-black/70 p-3 text-xs text-white/85">
+              <div className="mt-3 border border-white/15 bg-black/60 p-3 text-xs text-white/85">
                 {explainError}
               </div>
             )}
 
             <div className="mt-4">
               {explaining && (
-                <div className="border border-white/10 bg-black/45 p-4 text-sm text-white/70">
+                <div className="border border-white/10 bg-black/50 p-4 text-sm text-white/70">
                   <p className="font-medium text-white/90">Generating decode...</p>
                   <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
                     <div className="h-full w-1/2 animate-pulse rounded-full bg-white/50" />
@@ -539,10 +537,10 @@ export default function MonitorAppPage() {
                 <ExplainResultCard result={explainResult} compact />
               ) : (
                 !explaining && (
-                <div className="border border-dashed border-white/15 bg-black/45 p-4 text-sm text-white/65">
-                  <p className="font-medium text-white/85">No failed tx selected yet.</p>
-                  <p className="mt-2">Select a failed row from the feed to populate this panel.</p>
-                </div>
+                  <div className="border border-dashed border-white/15 bg-black/50 p-4 text-sm text-white/65">
+                    <p className="font-medium text-white/85">No failed tx selected yet.</p>
+                    <p className="mt-2">Select a failed row from the feed to populate this panel.</p>
+                  </div>
                 )
               )}
             </div>

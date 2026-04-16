@@ -8,6 +8,7 @@ import {
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
 import "@solana/wallet-adapter-react-ui/styles.css";
+import "./wallet-overrides.css";
 
 export function SolanaWalletProvider({ children }: PropsWithChildren) {
   const endpoint = useMemo(

@@ -259,12 +259,12 @@ export default function AdminPage() {
               <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Operations Console</h1>
             </div>
             {isMounted ? (
-              <WalletMultiButton className="!h-10 !rounded-full !border !border-white/20 !bg-black/70 !px-4 !text-sm !text-white !shadow-none hover:!bg-white/10" />
+              <WalletMultiButton className="!h-10 !rounded-xl !border !border-white/15 !bg-white/[0.04] !px-4 !text-sm !font-medium !text-white !shadow-none !transition hover:!border-white/30 hover:!bg-white/[0.1] focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-white/35 active:!translate-y-[1px]" />
             ) : (
               <button
                 type="button"
                 disabled
-                className="h-10 rounded-full border border-white/20 bg-black/70 px-4 text-sm text-white/70"
+                className="h-10 rounded-xl border border-white/15 bg-white/[0.04] px-4 text-sm font-medium text-white/70"
               >
                 Connect Wallet
               </button>
