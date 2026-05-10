@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { useRouter } from "next/navigation";
 import type { TxEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,14 @@ const statusClassMap: Record<TxEvent["status"], string> = {
 
 // Virtualization can replace this list once event velocity increases.
 function TransactionFeedBase({ events }: TransactionFeedProps) {
+  const router = useRouter();
+
+  const handleTransactionClick = (signature: string, status: TxEvent["status"]) => {
+    if (status === "failed") {
+      router.push(`/explain/${signature}`);
+    }
+  };
+
   return (
     <section id="feed" className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.28)] sm:p-5">
       <div className="mb-4 flex items-center justify-between">
@@ -33,8 +42,10 @@ function TransactionFeedBase({ events }: TransactionFeedProps) {
         {events.map((event, index) => (
           <article
             key={`${event.signature}-${event.slot}-${event.timestamp}-${index}`}
+            onClick={() => handleTransactionClick(event.signature, event.status)}
             className={cn(
               "grid grid-cols-1 gap-3 rounded-[1.3rem] border border-white/10 bg-black/75 p-4 md:grid-cols-[1.4fr_0.5fr_0.4fr_0.6fr] md:items-center",
+              event.status === "failed" && "cursor-pointer hover:border-red-500/50 hover:bg-red-500/5"
             )}
           >
             <div>

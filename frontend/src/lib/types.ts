@@ -17,3 +17,16 @@ export interface MetricsUpdate {
   currentSlotLag: number;
   txPerMinute: number;
 }
+
+export interface ExplainResponse {
+  hash: string;
+  network: string;
+  errorCode: string | null;
+  plainEnglish: string;
+  fixSuggestion: string;
+  riskLevel: string;
+  economicContext: string;
+  viewedCount: number;
+  createdAt: string;
+  shareUrl: string;
+}
