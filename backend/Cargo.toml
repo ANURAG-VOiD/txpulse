@@ -34,3 +34,19 @@ dotenvy = "0.15"
 
 # Utils
 futures-util = { version = "0.3", features = ["sink"] }
+
+# HTTP client for LLM integration
+reqwest = { version = "0.12", features = ["json"] }
+
+# Time
+chrono = "0.4"
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio-native-tls", "postgres", "chrono", "uuid"] }
+
+# Sentry
+sentry = "0.34"
+sentry-tracing = "0.34"
+
+# UUID
+uuid = { version = "1.0", features = ["v4", "serde"] }

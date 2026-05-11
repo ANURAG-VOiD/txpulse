@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { useRouter } from "next/navigation";
 import type { TxEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -17,8 +18,15 @@ const statusClassMap: Record<TxEvent["status"], string> = {
   pending: "border-white/15 bg-white/10 text-white/85",
 };
 
-// Virtualization can replace this list once event velocity increases.
 function TransactionFeedBase({ events, onSelectFailed, selectedSignature }: TransactionFeedProps) {
+  const router = useRouter();
+
+  const handleTransactionClick = (signature: string, status: TxEvent["status"]) => {
+    if (status === "failed") {
+      router.push(`/explain/${signature}`);
+    }
+  };
+
   return (
     <section id="feed" className="border-t border-white/12 pt-4 sm:pt-5">
       <div className="mb-4 flex items-center justify-between">
@@ -46,7 +54,7 @@ function TransactionFeedBase({ events, onSelectFailed, selectedSignature }: Tran
             className={cn(
               "grid grid-cols-1 gap-2 border-b border-white/10 py-3.5 md:grid-cols-[1.4fr_0.55fr_0.45fr_0.6fr] md:items-center",
               event.status === "failed" ? "cursor-pointer transition hover:bg-white/[0.04]" : "",
-              selectedSignature === event.signature && "bg-white/[0.06]",
+              selectedSignature === event.signature && "bg-white/[0.06]"
             )}
             onClick={() => {
               if (event.status === "failed") {
