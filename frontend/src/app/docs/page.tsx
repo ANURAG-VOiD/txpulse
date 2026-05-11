@@ -31,13 +31,19 @@ export default function DocsPage() {
               <div className="mt-6 flex flex-wrap gap-3 text-sm">
                 <Link
                   href="/app"
-                  className="rounded-full border border-white bg-white px-5 py-2.5 font-semibold text-black transition hover:scale-[1.01] hover:opacity-90"
+                  className="tx-btn-primary px-5"
                 >
                   Open App
                 </Link>
                 <Link
+                  href="/explain"
+                  className="tx-btn px-5"
+                >
+                  Open Decoder
+                </Link>
+                <Link
                   href="/admin"
-                  className="rounded-full border border-white/20 bg-black/70 px-5 py-2.5 text-white transition hover:border-white/35 hover:bg-white/10"
+                  className="tx-btn px-5"
                 >
                   Open Admin
                 </Link>

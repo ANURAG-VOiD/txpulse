@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { StreamingStatsCard } from "@/components/dashboard/StreamingStatsCard";
 
 const pillars = [
   {
@@ -36,8 +37,8 @@ const steps = [
   },
   {
     label: "Step 03",
-    title: "Tune and Iterate",
-    text: "Use observed latency and fee behavior to tighten your execution strategy.",
+    title: "Decode Failed Tx",
+    text: "Open Understand mode to decode failed hashes in plain English and apply concrete next fixes.",
   },
 ];
 
@@ -68,7 +69,7 @@ export default function Home() {
 
       <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-20 pt-8 sm:px-6 lg:px-8 lg:pt-10">
         <section className="reveal-up">
-          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+          <header className="flex flex-col items-center justify-center gap-3 border-b border-white/10 pb-6 text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/60 px-3 py-1.5 backdrop-blur">
               <Image
                 src="/txpulse.png"
@@ -84,30 +85,37 @@ export default function Home() {
           </header>
 
           <div className="mt-10 grid gap-10 lg:grid-cols-[1.3fr_0.7fr] lg:gap-12">
-            <div>
+            <div className="text-center">
               <p className="text-xs uppercase tracking-[0.35em] text-white/45">Built for shipping teams</p>
-              <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.03] tracking-[-0.045em] sm:text-6xl lg:text-7xl">
+              <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-semibold leading-[1.03] tracking-[-0.045em] sm:text-6xl lg:text-7xl">
                 Feel every
                 <span className="ml-2 inline-block border-b border-white/40 pb-1">transaction pulse</span>
                 <br />
                 before users do.
               </h1>
-              <p className="mt-6 max-w-2xl text-sm leading-7 text-white/68 sm:text-base">
-                TxPulse gives your team a live surface for confirmation behavior, slot drift, fee pressure, and reliability so you can tune Solana transaction flows with confidence.
+              <p className="mx-auto mt-6 max-w-2xl text-sm leading-7 text-white/68 sm:text-base">
+                TxPulse gives your team one workspace to watch confirmation behavior in real time and decode failed signatures with next-step fixes.
               </p>
 
-              <div className="mt-9 flex flex-wrap gap-3">
+              <div className="mt-9 flex flex-wrap justify-center gap-3">
                 <Link
                   href="/app"
-                  className="rounded-full border border-white bg-white px-6 py-3 text-sm font-semibold !text-black shadow-[0_10px_24px_rgba(255,255,255,0.18)] transition hover:translate-y-[-2px] hover:opacity-90"
+                  className="tx-btn-primary px-6"
                 >
-                  Launch Live App
+                  Enter Pulse Console
+                </Link>
+                <Link
+                  href="/explain"
+                  className="tx-btn px-6"
+                >
+                  Open Decoder
                 </Link>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-4 text-xs text-white/60">
+              <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs text-white/60">
                 <p>Wallet-auth only</p>
                 <p>Live Solana telemetry</p>
+                <p>Failed tx decoder</p>
                 <p>No API keys in browser</p>
               </div>
 
@@ -115,7 +123,7 @@ export default function Home() {
                 {highlights.map((item, index) => (
                   <div
                     key={item}
-                    className="reveal-up rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-white/78"
+                    className="reveal-up rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-center text-sm text-white/78"
                     style={{ animationDelay: `${120 + index * 120}ms` }}
                   >
                     {item}
@@ -124,38 +132,7 @@ export default function Home() {
               </div>
             </div>
 
-            <aside className="reveal-up relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5 [animation-delay:220ms]">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(255,255,255,0.16),transparent_36%)]" />
-              <div className="relative">
-                <p className="text-[11px] uppercase tracking-[0.3em] text-white/50">Now streaming</p>
-                <p className="mt-3 text-3xl font-semibold tracking-[-0.03em]">21,483 tx/hr</p>
-                <p className="mt-1 text-sm text-white/60">observed sample traffic</p>
-
-                <div className="mt-6 space-y-3">
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-3">
-                    <div className="flex items-center justify-between text-xs text-white/50">
-                      <span>Median Confirm</span>
-                      <span>+7.2%</span>
-                    </div>
-                    <p className="mt-1 text-lg font-medium">402ms</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-3">
-                    <div className="flex items-center justify-between text-xs text-white/50">
-                      <span>Success Rate</span>
-                      <span>stable</span>
-                    </div>
-                    <p className="mt-1 text-lg font-medium">99.14%</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-black/40 p-3">
-                    <div className="flex items-center justify-between text-xs text-white/50">
-                      <span>Slot Lag</span>
-                      <span>recovering</span>
-                    </div>
-                    <p className="mt-1 text-lg font-medium">1.8 slots</p>
-                  </div>
-                </div>
-              </div>
-            </aside>
+            <StreamingStatsCard />
           </div>
         </section>
 
@@ -164,7 +141,7 @@ export default function Home() {
             {pillars.map((pillar, index) => (
               <article
                 key={pillar.title}
-                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.025] p-6 transition hover:border-white/25 hover:bg-white/[0.045]"
+                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.025] p-6 text-center transition hover:border-white/25 hover:bg-white/[0.045]"
                 style={{ animationDelay: `${320 + index * 120}ms` }}
               >
                 <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full border border-white/10 opacity-50 transition group-hover:scale-110" />
@@ -178,7 +155,7 @@ export default function Home() {
 
         <section className="mt-20 reveal-up [animation-delay:320ms]">
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.02] p-6 sm:p-8">
-            <div className="max-w-3xl">
+            <div className="mx-auto max-w-3xl text-center">
               <p className="text-xs uppercase tracking-[0.33em] text-white/45">Who this is for</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
                 3 builder types, 3 headaches, 0 drama
@@ -189,7 +166,7 @@ export default function Home() {
               {personas.map((persona, index) => (
                 <article
                   key={persona.role}
-                  className="reveal-up rounded-2xl border border-white/10 bg-black/35 p-5"
+                  className="reveal-up rounded-2xl border border-white/10 bg-black/35 p-5 text-center"
                   style={{ animationDelay: `${360 + index * 120}ms` }}
                 >
                   <p className="text-[11px] uppercase tracking-[0.27em] text-white/45">{persona.role}</p>
@@ -207,7 +184,7 @@ export default function Home() {
 
         <section className="mt-20 reveal-up [animation-delay:380ms]">
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.025] p-6 sm:p-8">
-            <div className="flex flex-wrap items-end justify-between gap-5">
+            <div className="flex flex-col items-center justify-center gap-5 text-center">
               <div>
                 <p className="text-xs uppercase tracking-[0.33em] text-white/45">Get started in minutes</p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Your flow from wallet to insight</h2>
@@ -221,7 +198,7 @@ export default function Home() {
               {steps.map((step, index) => (
                 <div
                   key={step.label}
-                  className="reveal-up rounded-2xl border border-white/10 bg-black/35 p-5"
+                  className="reveal-up rounded-2xl border border-white/10 bg-black/35 p-5 text-center"
                   style={{ animationDelay: `${430 + index * 130}ms` }}
                 >
                   <p className="text-[11px] uppercase tracking-[0.27em] text-white/45">{step.label}</p>

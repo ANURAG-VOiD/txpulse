@@ -1,20 +1,40 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { AddressInput } from "@/components/dashboard/AddressInput";
 import { FloatingNav } from "@/components/dashboard/FloatingNav";
-import { MetricsGrid } from "@/components/dashboard/MetricsGrid";
 import { TransactionFeed } from "@/components/dashboard/TransactionFeed";
+import { ExplainResultCard } from "@/components/explainer/ExplainResultCard";
+import { explainTransaction, isLikelySolanaSignature, type ExplainResponse, type SolanaNetwork } from "@/lib/explainer";
 import { useTxPulseSocket } from "@/lib/useTxPulseSocket";
+
+const networkOptions: Array<{ value: SolanaNetwork; label: string }> = [
+  { value: "mainnet-beta", label: "mainnet-beta" },
+  { value: "devnet", label: "devnet" },
+  { value: "testnet", label: "testnet" },
+];
+
+function shortenAddress(address: string): string {
+  if (address.length < 14) {
+    return address;
+  }
+
+  return `${address.slice(0, 6)}...${address.slice(-6)}`;
+}
 
 export default function MonitorAppPage() {
   const [isMounted, setIsMounted] = useState(false);
   const { connected, publicKey } = useWallet();
   const [address, setAddress] = useState("");
+  const [selectedFailureHash, setSelectedFailureHash] = useState("");
+  const [explainNetwork, setExplainNetwork] = useState<SolanaNetwork>("mainnet-beta");
+  const [explainResult, setExplainResult] = useState<ExplainResponse | null>(null);
+  const [explainError, setExplainError] = useState<string | null>(null);
+  const [explaining, setExplaining] = useState(false);
   const initializedForWalletRef = useRef<string | null>(null);
 
   const {
@@ -46,7 +66,6 @@ export default function MonitorAppPage() {
 
     initializedForWalletRef.current = walletAddress;
 
-    // Initialize once per connected wallet, but keep manual input fully editable afterwards.
     if (address.trim().length === 0) {
       setAddress(walletAddress);
     }
@@ -56,7 +75,7 @@ export default function MonitorAppPage() {
 
   const statusText = useMemo(() => {
     if (!connected) {
-      return "Connect your Solana wallet to start wallet-based monitoring.";
+      return "Connect your Solana wallet to begin wallet-linked monitoring.";
     }
 
     if (lastError) {
@@ -78,28 +97,23 @@ export default function MonitorAppPage() {
     return "Wallet address loaded. Click monitor to resync manually.";
   }, [activeAddress, connected, lastError, status]);
 
-  const heroStats = useMemo(
-    () => [
-      { label: "Events", value: `${events.length}` },
-      { label: "Success", value: `${metrics.successRatePct.toFixed(1)}%` },
-      { label: "Latency", value: `${Math.round(metrics.avgConfirmationMs)} ms` },
-    ],
-    [events.length, metrics.avgConfirmationMs, metrics.successRatePct],
-  );
-
-  const latestEventLabel = useMemo(() => {
-    if (events.length === 0) {
-      return "No events yet";
+  const statusTone = useMemo(() => {
+    if (lastError) {
+      return "bg-white/8 border-white/30 text-white";
     }
-
-    const latest = events[0];
-    return `${latest.status.toUpperCase()} • slot ${latest.slot.toLocaleString()}`;
-  }, [events]);
+    if (status === "connected") {
+      return "bg-white text-black border-white";
+    }
+    if (status === "reconnecting" || status === "connecting") {
+      return "bg-white/10 border-white/20 text-white";
+    }
+    return "bg-white/[0.04] border-white/15 text-white/80";
+  }, [lastError, status]);
 
   const latencySeries = useMemo(() => {
-    const recent = latencySamples.slice(-10);
+    const recent = latencySamples.slice(-12);
     if (recent.length === 0) {
-      return Array.from({ length: 10 }, () => 0);
+      return Array.from({ length: 12 }, () => 0);
     }
 
     return recent;
@@ -114,6 +128,7 @@ export default function MonitorAppPage() {
         : 0,
     [latencyHasLiveData, latencySeries],
   );
+
   const latencyDelta = useMemo(() => {
     if (!latencyHasLiveData || latencySeries.length < 2) {
       return 0;
@@ -139,10 +154,10 @@ export default function MonitorAppPage() {
   }, [latencyDelta, latencyHasLiveData]);
 
   const latencyChart = useMemo(() => {
-    const width = 420;
-    const height = 170;
+    const width = 480;
+    const height = 176;
     const topPad = 12;
-    const bottomPad = 20;
+    const bottomPad = 22;
     const leftPad = 10;
     const rightPad = 10;
 
@@ -171,7 +186,6 @@ export default function MonitorAppPage() {
       bottomPad,
       linePath,
       areaPath,
-      points,
       latest: lastPoint,
     };
   }, [latencySeries]);
@@ -196,220 +210,349 @@ export default function MonitorAppPage() {
     return "Stream looks healthy. Continue monitoring for slot lag spikes.";
   }, [connected, events.length, metrics.successRatePct, status]);
 
+  const failedEventsCount = useMemo(
+    () => events.filter((event) => event.status === "failed").length,
+    [events],
+  );
+
+  const latestFailedSignature = useMemo(
+    () => events.find((event) => event.status === "failed")?.signature || "",
+    [events],
+  );
+
+  const kpiCards = useMemo(
+    () => [
+      { label: "Success Rate", value: `${metrics.successRatePct.toFixed(1)}%` },
+      { label: "Avg Confirmation", value: `${Math.round(metrics.avgConfirmationMs)} ms` },
+      { label: "Slot Lag", value: `${metrics.currentSlotLag}` },
+      { label: "Throughput", value: `${metrics.txPerMinute} tx/min` },
+      { label: "Cached Events", value: `${events.length}` },
+    ],
+    [events.length, metrics.avgConfirmationMs, metrics.currentSlotLag, metrics.successRatePct, metrics.txPerMinute],
+  );
+
+  const connectionDotTone = useMemo(() => {
+    if (lastError || status === "error") {
+      return "bg-white/55";
+    }
+
+    if (status === "connected") {
+      return "bg-white";
+    }
+
+    return "bg-white/35";
+  }, [lastError, status]);
+
+  const runExplain = useCallback(async (hash: string) => {
+    setExplainError(null);
+    setExplaining(true);
+
+    try {
+      const response = await explainTransaction(hash, explainNetwork);
+      setExplainResult(response);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to decode this transaction.";
+      setExplainError(message);
+      setExplainResult(null);
+    } finally {
+      setExplaining(false);
+    }
+  }, [explainNetwork]);
+
+  const handleSelectFailed = useCallback((signature: string) => {
+    setSelectedFailureHash(signature);
+    void runExplain(signature);
+  }, [runExplain]);
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-black text-white">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(255,255,255,0.09),transparent_24%),linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:auto,56px_56px,56px_56px] opacity-35" />
 
-      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
         <FloatingNav />
 
-        <section id="overview" className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.32)] sm:p-8">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,255,255,0.12),transparent_28%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.06),transparent_22%)]" />
-            <div className="relative">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/60 px-3 py-1.5 transition hover:border-white/30 hover:bg-white/10">
-                  <Image
-                    src="/txpulse.png"
-                    alt="TxPulse logo"
-                    width={18}
-                    height={18}
-                    className="h-[18px] w-[18px] rounded-full object-cover"
-                    priority
-                  />
-                  <p className="text-[10px] uppercase tracking-[0.32em] text-white/45">Wallet-auth monitor</p>
+        <section id="overview" className="relative overflow-hidden border-b border-white/12 pb-6 sm:pb-7">
+          <div className="relative text-center">
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/"
+                className="tx-btn inline-flex items-center gap-2 px-4 py-2 text-xs"
+              >
+                <Image
+                  src="/txpulse.png"
+                  alt="TxPulse logo"
+                  width={18}
+                  height={18}
+                  className="h-[18px] w-[18px] rounded-full object-cover"
+                  priority
+                />
+                <span>Watch mode</span>
+              </Link>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href="/explain"
+                  className="tx-btn px-4 py-2 text-xs"
+                >
+                  Open Tx Decoder
                 </Link>
                 {isMounted ? (
-                  <WalletMultiButton className="!h-10 !rounded-full !border !border-white/20 !bg-black/70 !px-4 !text-sm !text-white !shadow-none hover:!bg-white/10" />
+                  <WalletMultiButton className="!h-10 !rounded-xl !border !border-white/15 !bg-white/[0.04] !px-4 !text-sm !font-medium !text-white !shadow-none !transition hover:!border-white/30 hover:!bg-white/[0.1] focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-white/35 active:!translate-y-[1px]" />
                 ) : (
                   <button
                     type="button"
                     disabled
-                    className="h-10 rounded-full border border-white/20 bg-black/70 px-4 text-sm text-white/70"
+                    className="tx-btn h-10 px-4 text-sm"
                   >
                     Connect Wallet
                   </button>
                 )}
               </div>
+            </div>
 
-              <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.04em] text-white sm:text-6xl">
-                Monitor your connected Solana wallet in real time.
-              </h1>
-              <p className="mt-5 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
-                TxPulse uses your connected wallet address as the default monitor target and starts streaming automatically once authenticated.
-              </p>
+            <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
+              Solana reliability command center
+            </h1>
+            <p className="mx-auto mt-3 max-w-3xl text-sm leading-6 text-white/68 sm:text-base">
+              Monitor live transaction health and diagnose failures in one place.
+            </p>
 
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1.5 text-xs text-white/70">
-                <span className="h-2 w-2 rounded-full bg-white/80" />
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2" aria-live="polite">
+              <span className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70">
+                <span className={`mr-2 inline-block h-1.5 w-1.5 rounded-full ${connectionDotTone}`} />
                 {statusText}
-              </div>
-
-              <div className="mt-8">
-                <AddressInput
-                  value={address}
-                  onChange={setAddress}
-                  onMonitor={() => startMonitoring(address)}
-                  onStop={disconnect}
-                  statusText={statusText}
-                  disabled={!connected}
-                  stopDisabled={status === "idle"}
-                />
-                {connected && walletAddress && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/65">
-                    <span>Phantom is used for login. Monitor target can be any wallet/program address.</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAddress(walletAddress);
-                        startMonitoring(walletAddress);
-                      }}
-                      className="rounded-full border border-white/15 px-3 py-1 transition hover:border-white/30 hover:bg-white/10"
-                    >
-                      Use Connected Wallet
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                {heroStats.map((stat) => (
-                  <div key={stat.label} className="rounded-[1.25rem] border border-white/10 bg-black/70 px-4 py-3">
-                    <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">{stat.label}</p>
-                    <p className="mt-2 text-lg font-medium text-white">{stat.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              <p className="mt-3 text-xs text-white/55">Latest event: {latestEventLabel}</p>
-            </div>
-          </div>
-
-          <div className="flex h-full flex-col gap-4 rounded-[2rem] border border-white/10 bg-white/[0.03] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.32)] sm:p-6">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.34em] text-white/45">Runtime summary</p>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-white">
-                Wallet-native access. No email login. No password flow.
-              </p>
+              </span>
+              {walletAddress && (
+                <span className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70">
+                  Wallet {shortenAddress(walletAddress)}
+                </span>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-[1.25rem] border border-white/10 bg-black/70 p-4">
-                <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">Status</p>
-                <p className="mt-2 text-sm text-white/85">{status}</p>
-              </div>
-              <div className="rounded-[1.25rem] border border-white/10 bg-black/70 p-4">
-                <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">Wallet</p>
-                <p className="mt-2 truncate text-sm text-white/85">{walletAddress || "Not connected"}</p>
-              </div>
-              <div className="rounded-[1.25rem] border border-white/10 bg-black/70 p-4">
-                <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">Slot lag</p>
-                <p className="mt-2 text-sm text-white/85">{metrics.currentSlotLag}</p>
-              </div>
-              <div className="rounded-[1.25rem] border border-white/10 bg-black/70 p-4">
-                <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">Throughput</p>
-                <p className="mt-2 text-sm text-white/85">{metrics.txPerMinute} tx/min</p>
-              </div>
-            </div>
-
-            <div className="rounded-[1.25rem] border border-white/10 bg-black/70 p-4">
-              <p className="text-[11px] uppercase tracking-[0.3em] text-white/45">Confirmation Latency Trend</p>
-              <p className="mt-2 text-xs text-white/55">Rolling confirmation timing from the latest websocket events.</p>
-
-              <div className="mt-4 rounded-xl border border-white/10 bg-black/55 p-3">
-                <div className="relative overflow-hidden rounded-lg bg-black/75">
-                  <svg
-                    viewBox={`0 0 ${latencyChart.width} ${latencyChart.height}`}
-                    className="h-40 w-full"
-                    preserveAspectRatio="none"
-                    role="img"
-                    aria-label="Confirmation latency mini chart"
+            <div className="mt-6">
+              <AddressInput
+                value={address}
+                onChange={setAddress}
+                onMonitor={() => startMonitoring(address)}
+                onStop={disconnect}
+                statusText={statusText}
+                disabled={!connected}
+                stopDisabled={status === "idle"}
+              />
+              {connected && walletAddress && (
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-white/65">
+                  <span>Phantom authenticates this session. You can still monitor any wallet or program address.</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddress(walletAddress);
+                      startMonitoring(walletAddress);
+                    }}
+                    className="tx-btn-ghost px-3 py-1 text-xs"
                   >
-                    <defs>
-                      <linearGradient id="latencyAreaFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.36)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
-                      </linearGradient>
-                    </defs>
-
-                    {[0.33, 0.66].map((ratio) => {
-                      const y = latencyChart.topPad + ratio * (latencyChart.height - latencyChart.topPad - latencyChart.bottomPad);
-                      return (
-                        <line
-                          key={`grid-${ratio}`}
-                          x1="0"
-                          x2={latencyChart.width}
-                          y1={y}
-                          y2={y}
-                          stroke="rgba(255,255,255,0.1)"
-                          strokeWidth="1"
-                          strokeDasharray="4 4"
-                        />
-                      );
-                    })}
-
-                    <path d={latencyChart.areaPath} fill="url(#latencyAreaFill)" />
-                    <path
-                      d={latencyChart.linePath}
-                      fill="none"
-                      stroke={latencyHasLiveData ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.35)"}
-                      strokeWidth="2.2"
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                    />
-
-                    <circle
-                      cx={latencyChart.latest.x}
-                      cy={latencyChart.latest.y}
-                      r="3"
-                      fill="rgba(255,255,255,0.95)"
-                    />
-                  </svg>
+                    Use Connected Wallet
+                  </button>
                 </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] uppercase tracking-[0.2em] text-white/45">
-                  <p>Latest {latencyHasLiveData ? `${latencyChart.latest.sample} ms` : "-"}</p>
-                  <p>Avg {latencyHasLiveData ? `${latencyAvg} ms` : "-"}</p>
-                  <p>Peak {latencyHasLiveData ? `${latencyPeak} ms` : "Waiting"}</p>
-                  <p>Trend {latencyDirection}</p>
-                </div>
-              </div>
+              )}
             </div>
 
-            <div className="relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-black/70 p-4">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-              <p className="text-[10px] uppercase tracking-[0.32em] text-white/40">Live Signal Ribbon</p>
-
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[11px] text-white/80">
-                <span className="text-white/95">LAT</span>
-                <span>{latencyHasLiveData ? `${latencyChart.latest.sample}ms` : "--"}</span>
-                <span className="h-1 w-1 rounded-full bg-white/35" />
-                <span>AVG {latencyHasLiveData ? `${latencyAvg}ms` : "--"}</span>
-                <span className="h-1 w-1 rounded-full bg-white/35" />
-                <span>PEAK {latencyHasLiveData ? `${latencyPeak}ms` : "--"}</span>
-                <span className="h-1 w-1 rounded-full bg-white/35" />
-                <span>WIN {events.length}</span>
-                <span className="h-1 w-1 rounded-full bg-white/35" />
-                <span>SUCCESS {metrics.successRatePct.toFixed(1)}%</span>
-                <span className="h-1 w-1 rounded-full bg-white/35" />
-                <span>TREND {latencyDirection}</span>
-              </div>
-
-              <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-white/45 via-white/90 to-white/45 transition-all duration-500"
-                  style={{ width: `${Math.max(8, Math.min(100, metrics.successRatePct))}%` }}
-                />
-              </div>
-
-              <p className="mt-3 text-xs leading-5 text-white/70">{suggestedAction}</p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 border-y border-white/10 py-4">
+              {kpiCards.map((card) => (
+                <div key={card.label} className="min-w-[140px] border-l border-white/15 pl-3 first:border-l-0 first:pl-0">
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-white/45">{card.label}</p>
+                  <p className="mt-1 text-lg font-medium text-white">{card.value}</p>
+                </div>
+              ))}
             </div>
+
+            <p className="mx-auto mt-4 max-w-3xl border-l-2 border-white/25 pl-3 text-left text-xs text-white/72">
+              Operator note: {suggestedAction}
+            </p>
           </div>
         </section>
 
-        <MetricsGrid metrics={metrics} />
+        <section className="grid gap-6 xl:grid-cols-2">
+          <section id="dashboard" className="border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-white/45">Latency Trend</p>
+                <p className="mt-1 text-xs text-white/55">Live confirmation timing and drift behavior</p>
+              </div>
+              <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/70">
+                Direction {latencyDirection}
+              </span>
+            </div>
 
-        <section>
-          <TransactionFeed events={events} />
+            <div className="mt-4 border border-white/10 bg-black/55 p-2 sm:p-3">
+              <svg
+                viewBox={`0 0 ${latencyChart.width} ${latencyChart.height}`}
+                className="h-44 w-full"
+                preserveAspectRatio="none"
+                role="img"
+                aria-label="Confirmation latency chart"
+              >
+                <defs>
+                  <linearGradient id="latencyAreaFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.36)" />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+                  </linearGradient>
+                </defs>
+
+                {[0.33, 0.66].map((ratio) => {
+                  const y = latencyChart.topPad + ratio * (latencyChart.height - latencyChart.topPad - latencyChart.bottomPad);
+                  return (
+                    <line
+                      key={`grid-${ratio}`}
+                      x1="0"
+                      x2={latencyChart.width}
+                      y1={y}
+                      y2={y}
+                      stroke="rgba(255,255,255,0.1)"
+                      strokeWidth="1"
+                      strokeDasharray="4 4"
+                    />
+                  );
+                })}
+
+                <path d={latencyChart.areaPath} fill="url(#latencyAreaFill)" />
+                <path
+                  d={latencyChart.linePath}
+                  fill="none"
+                  stroke={latencyHasLiveData ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.35)"}
+                  strokeWidth="2.2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+                <circle
+                  cx={latencyChart.latest.x}
+                  cy={latencyChart.latest.y}
+                  r="3"
+                  fill="rgba(255,255,255,0.95)"
+                />
+              </svg>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="border border-white/10 bg-black/45 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.17em] text-white/45">Latest</p>
+                <p className="mt-1 text-sm font-medium text-white">{latencyHasLiveData ? `${latencyChart.latest.sample} ms` : "--"}</p>
+              </div>
+              <div className="border border-white/10 bg-black/45 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.17em] text-white/45">Average</p>
+                <p className="mt-1 text-sm font-medium text-white">{latencyHasLiveData ? `${latencyAvg} ms` : "--"}</p>
+              </div>
+              <div className="border border-white/10 bg-black/45 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.17em] text-white/45">Peak</p>
+                <p className="mt-1 text-sm font-medium text-white">{latencyHasLiveData ? `${latencyPeak} ms` : "--"}</p>
+              </div>
+              <div className="border border-white/10 bg-black/45 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.17em] text-white/45">Failed</p>
+                <p className="mt-1 text-sm font-medium text-white">{failedEventsCount}</p>
+              </div>
+            </div>
+          </section>
+
+          <aside
+            id="understand"
+            className="h-fit border border-white/10 bg-white/[0.02] p-4 sm:p-5 xl:sticky xl:top-24"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[11px] uppercase tracking-[0.3em] text-white/45">Understand Mode</p>
+              <span className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/70">
+                Feed linked
+              </span>
+            </div>
+
+            <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">
+              Click failed rows to debug instantly
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-white/68">
+              Keep this panel open while monitoring. It updates in place so your team stays in one workflow.
+            </p>
+
+            <div className="mt-4 grid gap-2">
+              <input
+                value={selectedFailureHash}
+                onChange={(event) => setSelectedFailureHash(event.target.value)}
+                placeholder="Failed transaction signature"
+                className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-xs text-white outline-none transition placeholder:text-white/30 focus:border-white/30 focus:ring-1 focus:ring-white/30"
+              />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_auto]">
+                <label className="relative block" aria-label="Select decode network">
+                  <select
+                    value={explainNetwork}
+                    onChange={(event) => setExplainNetwork(event.target.value as SolanaNetwork)}
+                    className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 pr-9 text-xs text-white outline-none transition focus:border-white/30 focus:ring-1 focus:ring-white/30"
+                  >
+                    {networkOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/55" aria-hidden="true">
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => void runExplain(selectedFailureHash)}
+                  disabled={!isLikelySolanaSignature(selectedFailureHash) || explaining}
+                  className="tx-btn-primary px-3 py-2.5 text-xs"
+                >
+                  {explaining ? "Running" : "Decode"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (latestFailedSignature) {
+                      setSelectedFailureHash(latestFailedSignature);
+                      void runExplain(latestFailedSignature);
+                    }
+                  }}
+                  disabled={!latestFailedSignature}
+                  className="tx-btn px-3 py-2.5 text-xs"
+                >
+                  Use latest failed
+                </button>
+              </div>
+            </div>
+
+            {explainError && (
+              <div className="mt-3 border border-white/15 bg-black/60 p-3 text-xs text-white/85">
+                {explainError}
+              </div>
+            )}
+
+            <div className="mt-4">
+              {explaining && (
+                <div className="border border-white/10 bg-black/50 p-4 text-sm text-white/70">
+                  <p className="font-medium text-white/90">Generating decode...</p>
+                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full w-1/2 animate-pulse rounded-full bg-white/50" />
+                  </div>
+                </div>
+              )}
+              {!explaining && explainResult ? (
+                <ExplainResultCard result={explainResult} compact />
+              ) : (
+                !explaining && (
+                  <div className="border border-dashed border-white/15 bg-black/50 p-4 text-sm text-white/65">
+                    <p className="font-medium text-white/85">No failed tx selected yet.</p>
+                    <p className="mt-2">Select a failed row from the feed to populate this panel.</p>
+                  </div>
+                )
+              )}
+            </div>
+          </aside>
+
+          <div className="xl:col-span-2">
+            <TransactionFeed
+              events={events}
+              onSelectFailed={handleSelectFailed}
+              selectedSignature={selectedFailureHash || null}
+            />
+          </div>
         </section>
       </main>
     </div>

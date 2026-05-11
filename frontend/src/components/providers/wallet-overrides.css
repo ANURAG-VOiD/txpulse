@@ -1,0 +1,72 @@
+.wallet-adapter-button {
+  font-family: var(--font-space-grotesk), Arial, Helvetica, sans-serif !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #f5f5f5 !important;
+  box-shadow: none !important;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 120ms ease;
+}
+
+.wallet-adapter-button-trigger {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.wallet-adapter-button:not([disabled]):hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.wallet-adapter-button:not([disabled]):active {
+  transform: translateY(1px);
+}
+
+.wallet-adapter-button[disabled] {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(245, 245, 245, 0.45) !important;
+}
+
+.wallet-adapter-dropdown-list {
+  background: rgba(10, 10, 10, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px !important;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45) !important;
+  font-family: var(--font-space-grotesk), Arial, Helvetica, sans-serif !important;
+}
+
+.wallet-adapter-dropdown-list-item {
+  border-radius: 8px !important;
+  color: #f5f5f5 !important;
+}
+
+.wallet-adapter-dropdown-list-item:not([disabled]):hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  background: #090909 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.52) !important;
+  font-family: var(--font-space-grotesk), Arial, Helvetica, sans-serif !important;
+}
+
+.wallet-adapter-modal-title {
+  letter-spacing: 0.02em;
+}
+
+.wallet-adapter-modal-button-close {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
